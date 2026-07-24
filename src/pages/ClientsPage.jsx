@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { getAllClients, createClient, updateClient, deleteClient } from '../services/clientsService'
 
 export default function ClientsPage() {
@@ -14,7 +13,6 @@ export default function ClientsPage() {
     phone: '',
     address: '',
   })
-  const navigate = useNavigate()
 
   useEffect(() => {
     loadClients()
@@ -102,14 +100,9 @@ export default function ClientsPage() {
     <main className="page-container">
       <header className="page-header">
         <h1>👥 Clientes</h1>
-        <div>
-          <button onClick={() => navigate('/dashboard')} className="btn-secondary">
-            Volver
-          </button>
-          <button onClick={() => setShowForm(true)} className="btn-primary">
-            + Nuevo Cliente
-          </button>
-        </div>
+        <button onClick={() => setShowForm(true)} className="btn-primary">
+          + Nuevo Cliente
+        </button>
       </header>
 
       {error && <p className="error">{error}</p>}

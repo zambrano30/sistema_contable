@@ -2,11 +2,11 @@ import './App.css'
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { Layout } from './components/Layout'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import ProductsPage from './pages/ProductsPage'
 import ClientsPage from './pages/ClientsPage'
-import './App.css'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -36,7 +36,9 @@ function AppContent() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <DashboardPage />
+            <Layout>
+              <DashboardPage />
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -44,7 +46,9 @@ function AppContent() {
         path="/products"
         element={
           <ProtectedRoute>
-            <ProductsPage />
+            <Layout>
+              <ProductsPage />
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -52,7 +56,9 @@ function AppContent() {
         path="/clients"
         element={
           <ProtectedRoute>
-            <ClientsPage />
+            <Layout>
+              <ClientsPage />
+            </Layout>
           </ProtectedRoute>
         }
       />

@@ -1,41 +1,18 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function DashboardPage() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const navigate = useNavigate()
-  const [loggingOut, setLoggingOut] = useState(false)
-
-  const handleLogout = async () => {
-    setLoggingOut(true)
-    await logout()
-    navigate('/')
-  }
 
   return (
-    <main className="dashboard-container">
-      <header className="dashboard-header">
+    <main className="page-container">
+      <header className="page-header">
         <div>
-          <h1>Sistema contable</h1>
-          <p className="user-info">Bienvenido, {user?.email}</p>
+          <h1>📊 Dashboard</h1>
+          <p className="page-subtitle">Bienvenido de nuevo, {user?.email}</p>
         </div>
-        <button onClick={handleLogout} disabled={loggingOut} className="btn-logout">
-          {loggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
-        </button>
       </header>
-
-      <nav className="dashboard-nav">
-        <button onClick={() => navigate('/products')} className="nav-btn">
-          📦 Productos
-        </button>
-        <button onClick={() => navigate('/clients')} className="nav-btn">
-          👥 Clientes
-        </button>
-        <button onClick={() => navigate('/')} className="nav-btn">
-          🏠 Panel Principal
-        </button>
-      </nav>
 
       <section className="dashboard-content">
         <h2>Panel de Control</h2>

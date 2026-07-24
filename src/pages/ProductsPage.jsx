@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { getAllProducts, createProduct, updateProduct, deleteProduct } from '../services/productsService'
 import { BarcodeScanner } from '../components/BarcodeScanner'
 
@@ -17,7 +16,6 @@ export default function ProductsPage() {
     quantity: '',
     sku: '',
   })
-  const navigate = useNavigate()
 
   useEffect(() => {
     loadProducts()
@@ -113,14 +111,9 @@ export default function ProductsPage() {
     <main className="page-container">
       <header className="page-header">
         <h1>📦 Productos</h1>
-        <div>
-          <button onClick={() => navigate('/dashboard')} className="btn-secondary">
-            Volver
-          </button>
-          <button onClick={() => setShowForm(true)} className="btn-primary">
-            + Nuevo Producto
-          </button>
-        </div>
+        <button onClick={() => setShowForm(true)} className="btn-primary">
+          + Nuevo Producto
+        </button>
       </header>
 
       {error && <p className="error">{error}</p>}
