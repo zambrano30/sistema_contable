@@ -47,7 +47,7 @@ export default function SalesPage() {
       // Increment quantity
       setSaleItems(saleItems.map(item =>
         item.id === product.id
-          ? { ...item, quantity: item.quantity + 1 }
+          ? { ...item, quantity: item.quantity + 1, subtotal: item.price * (item.quantity + 1) }
           : item
       ));
     } else {
