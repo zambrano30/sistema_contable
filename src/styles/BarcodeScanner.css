@@ -1,0 +1,123 @@
+/* Barcode Scanner Overlay */
+.barcode-scanner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.barcode-scanner-modal {
+  background-color: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border: 1px solid var(--bg-tertiary);
+}
+
+.scanner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--bg-tertiary);
+  padding-bottom: 12px;
+}
+
+.scanner-header h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+}
+
+.scanner-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.scanner-close-btn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.qr-reader {
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  border: 2px solid var(--accent-blue);
+}
+
+.qr-reader video {
+  width: 100%;
+  height: auto;
+}
+
+.scanner-hint {
+  text-align: center;
+  color: var(--text-secondary);
+  margin: 8px 0;
+  font-size: 0.9rem;
+}
+
+.scanner-error {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--error-color, #ef4444);
+  color: var(--error-color, #ef4444);
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.barcode-scanner-modal button {
+  align-self: center;
+  min-width: 150px;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  .barcode-scanner-modal {
+    max-width: 100%;
+    width: 95%;
+    padding: 16px;
+  }
+
+  .scanner-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .qr-reader {
+    height: 300px;
+  }
+}
