@@ -10,6 +10,7 @@ export function Sidebar() {
 
   const menuItems = [
     { label: 'Dashboard', icon: '📊', path: '/dashboard' },
+    { label: 'Ventas', icon: '💰', path: '/sales' },
     { label: 'Productos', icon: '📦', path: '/products' },
     { label: 'Clientes', icon: '👥', path: '/clients' },
   ]
