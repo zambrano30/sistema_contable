@@ -7,6 +7,7 @@ export default function ClientsPage() {
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -85,7 +86,7 @@ export default function ClientsPage() {
   }
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este cliente?')) {
+    if (window.confirm('¿Estás seguro de que deseas eliminar este cliente?')) {
       const result = await deleteClient(id)
 
       if (result.ok) {
@@ -96,108 +97,211 @@ export default function ClientsPage() {
     }
   }
 
+  const filteredClients = clients.filter(c =>
+    c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const getInitials = (name) => {
+    if (!name) return 'CL'
+    const parts = name.trim().split(' ')
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase()
+    }
+    return name.slice(0, 2).toUpperCase()
+  }
+
   return (
-    <main className="page-container">
+    <div className="page-container">
+      {/* Header */}
       <header className="page-header">
-        <h1>👥 Clientes</h1>
-        <button onClick={() => setShowForm(true)} className="btn-primary">
-          + Nuevo Cliente
+        <div>
+          <span className="text-[0.75rem] font-bold text-[var(--accent-orange-light)] uppercase tracking-wider">
+            Lumina Ledger • Clientes
+          </span>
+          <h1 className="mt-1">
+            <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">group</span>
+            <span>Gestión de Clientes</span>
+          </h1>
+        </div>
+
+        <button 
+          onClick={() => { resetForm(); setShowForm(true); }} 
+          className="btn-primary"
+        >
+          <span className="material-symbols-outlined">person_add</span>
+          <span>Agregar Cliente</span>
         </button>
       </header>
 
-      {error && <p className="error">{error}</p>}
+      {error && <div className="error-message">{error}</div>}
 
+      {/* Form Card */}
       {showForm && (
-        <section className="form-section">
-          <h2>{editingId ? 'Editar Cliente' : 'Crear Cliente'}</h2>
-          <form onSubmit={handleSubmit} className="form">
+        <div className="card bg-[var(--bg-secondary)] border border-[var(--accent-orange)] p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-[var(--text-primary)] m-0 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[var(--accent-orange)]">person_add</span>
+              <span>{editingId ? 'Editar Información del Cliente' : 'Registrar Nuevo Cliente'}</span>
+            </h2>
+            <button 
+              className="bg-none border-none text-[var(--text-tertiary)] hover:text-[var(--text-primary)] cursor-pointer"
+              onClick={resetForm}
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="form-group">
-              <label>Nombre *</label>
+              <label>Nombre Completo / Razon Social *</label>
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
+                placeholder="Ej: Distribuidora Global S.A."
                 required
               />
             </div>
 
-            <div className="form-row">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="form-group">
-                <label>Correo electrónico</label>
+                <label>Correo Electrónico</label>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
+                  placeholder="contacto@empresa.com"
                 />
               </div>
 
               <div className="form-group">
-                <label>Teléfono</label>
+                <label>Teléfono de Contacto</label>
                 <input
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleInputChange}
+                  placeholder="+54 11 4455-6677"
                 />
               </div>
             </div>
 
             <div className="form-group">
-              <label>Dirección</label>
-              <textarea name="address" value={formData.address} onChange={handleInputChange} />
+              <label>Dirección Fiscal / Entrega</label>
+              <textarea 
+                name="address" 
+                value={formData.address} 
+                onChange={handleInputChange}
+                placeholder="Av. Corrientes 1234, CABA..."
+                rows="2"
+              />
             </div>
 
-            <div className="form-actions">
-              <button type="submit" className="btn-primary">
-                {editingId ? 'Actualizar' : 'Crear'}
-              </button>
+            <div className="flex gap-3 justify-end mt-2">
               <button type="button" onClick={resetForm} className="btn-secondary">
                 Cancelar
               </button>
+              <button type="submit" className="btn-primary">
+                <span className="material-symbols-outlined">save</span>
+                <span>{editingId ? 'Guardar Cambios' : 'Registrar Cliente'}</span>
+              </button>
             </div>
           </form>
-        </section>
+        </div>
       )}
 
-      <section className="clients-list">
+      {/* Filter / Search Bar */}
+      <div className="card flex items-center gap-3">
+        <span className="material-symbols-outlined text-[var(--text-tertiary)]">search</span>
+        <input 
+          type="text" 
+          placeholder="Buscar cliente por nombre o correo electrónico..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full bg-transparent border-none outline-none text-[var(--text-primary)]"
+        />
+      </div>
+
+      {/* Clients Table Container */}
+      <div className="card">
         {loading ? (
-          <p>Cargando clientes...</p>
-        ) : clients.length === 0 ? (
-          <p>No hay clientes. Crea uno para empezar.</p>
+          <div className="py-12 text-center text-[var(--text-tertiary)]">
+            <p>Cargando lista de clientes...</p>
+          </div>
+        ) : filteredClients.length === 0 ? (
+          <div className="text-center py-12 text-[var(--text-tertiary)]">
+            <span className="material-symbols-outlined text-5xl opacity-30 mb-2">person_off</span>
+            <p className="m-0">No hay clientes registrados.</p>
+          </div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Correo</th>
-                <th>Teléfono</th>
-                <th>Dirección</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clients.map((client) => (
-                <tr key={client.id}>
-                  <td>{client.name}</td>
-                  <td>{client.email || '-'}</td>
-                  <td>{client.phone || '-'}</td>
-                  <td>{client.address || '-'}</td>
-                  <td>
-                    <button onClick={() => handleEdit(client)} className="btn-secondary">
-                      Editar
-                    </button>
-                    <button onClick={() => handleDelete(client.id)} className="btn-danger">
-                      Eliminar
-                    </button>
-                  </td>
+          <div className="table-wrapper">
+            <table className="custom-table">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Correo</th>
+                  <th>Teléfono</th>
+                  <th>Dirección</th>
+                  <th className="text-right">Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredClients.map((client) => (
+                  <tr key={client.id}>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-[var(--bg-container-highest)] border border-[var(--accent-orange)]/30 text-[var(--accent-orange-light)] font-bold text-xs flex items-center justify-center">
+                          {getInitials(client.name)}
+                        </div>
+                        <span className="font-semibold">{client.name}</span>
+                      </div>
+                    </td>
+                    <td className="text-[var(--text-secondary)]">
+                      {client.email ? (
+                        <div className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-xs text-[var(--text-tertiary)]">mail</span>
+                          <span>{client.email}</span>
+                        </div>
+                      ) : '-'}
+                    </td>
+                    <td className="text-[var(--text-secondary)] font-mono text-xs">
+                      {client.phone ? (
+                        <div className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-xs text-[var(--text-tertiary)]">call</span>
+                          <span>{client.phone}</span>
+                        </div>
+                      ) : '-'}
+                    </td>
+                    <td className="text-[var(--text-secondary)]">
+                      {client.address || '-'}
+                    </td>
+                    <td className="text-right">
+                      <div className="flex gap-2 justify-end">
+                        <button 
+                          onClick={() => handleEdit(client)} 
+                          className="btn-secondary btn-small"
+                        >
+                          <span className="material-symbols-outlined text-sm">edit</span>
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(client.id)} 
+                          className="btn-danger btn-small"
+                          title="Eliminar cliente"
+                        >
+                          <span className="material-symbols-outlined text-sm">delete</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </section>
-    </main>
+      </div>
+    </div>
   )
 }

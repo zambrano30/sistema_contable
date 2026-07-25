@@ -8,6 +8,18 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Check if demo session exists
+    const storedDemoUser = localStorage.getItem('demo_user')
+    if (storedDemoUser) {
+      try {
+        setUser(JSON.parse(storedDemoUser))
+        setLoading(false)
+        return
+      } catch (e) {
+        localStorage.removeItem('demo_user')
+      }
+    }
+
     const initAuth = async () => {
       const result = await getSession()
 
@@ -21,19 +33,31 @@ export function AuthProvider({ children }) {
     initAuth()
 
     const unsubscribe = onAuthStateChange((session) => {
-      setUser(session?.user ?? null)
+      if (!localStorage.getItem('demo_user')) {
+        setUser(session?.user ?? null)
+      }
     })
 
     return unsubscribe
   }, [])
 
+  const loginAsDemo = (customEmail) => {
+    const demoUserObj = { 
+      email: customEmail || 'admin@facturapro.com', 
+      id: 'demo-user-admin' 
+    }
+    localStorage.setItem('demo_user', JSON.stringify(demoUserObj))
+    setUser(demoUserObj)
+  }
+
   const logout = async () => {
+    localStorage.removeItem('demo_user')
     await signOut()
     setUser(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout }}>
+    <AuthContext.Provider value={{ user, loading, logout, loginAsDemo }}>
       {children}
     </AuthContext.Provider>
   )
