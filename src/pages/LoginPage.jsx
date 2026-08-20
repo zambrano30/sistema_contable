@@ -64,19 +64,19 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="form-group">
-            <label htmlFor="email">Correo Electrónico</label>
+            <label htmlFor="email">Usuario</label>
             <div className="relative flex items-center">
               <input
                 id="email"
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu@empresa.com"
+                placeholder="tu usuario o correo"
                 className="w-full pl-10"
                 required
               />
               <span className="material-symbols-outlined absolute left-3 text-[var(--text-tertiary)] text-xl pointer-events-none">
-                mail
+                person
               </span>
             </div>
           </div>

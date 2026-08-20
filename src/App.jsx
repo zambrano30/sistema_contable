@@ -8,6 +8,9 @@ import DashboardPage from './pages/DashboardPage'
 import ProductsPage from './pages/ProductsPage'
 import ClientsPage from './pages/ClientsPage'
 import SalesPage from './pages/SalesPage'
+import PaymentsPage from './pages/PaymentsPage'
+import InventoryPage from './pages/InventoryPage'
+import ExpensesPage from './pages/ExpensesPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -69,6 +72,36 @@ function AppContent() {
           <ProtectedRoute>
             <Layout>
               <SalesPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payments"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <PaymentsPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/inventory"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <InventoryPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/expenses"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ExpensesPage />
             </Layout>
           </ProtectedRoute>
         }

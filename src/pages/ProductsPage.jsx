@@ -10,12 +10,17 @@ export default function ProductsPage() {
   const [editingId, setEditingId] = useState(null)
   const [showScanner, setShowScanner] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [validationError, setValidationError] = useState('')
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: '',
+    purchase_price: '',
     quantity: '',
+    minimum_quantity: '10',
     sku: '',
+    is_taxable: true,
+    tax_percentage: '19',
   })
 
   useEffect(() => {
@@ -45,9 +50,14 @@ export default function ProductsPage() {
       name: '',
       description: '',
       price: '',
+      purchase_price: '',
       quantity: '',
+      minimum_quantity: '10',
       sku: '',
+      is_taxable: true,
+      tax_percentage: '19',
     })
+    setValidationError('')
     setEditingId(null)
     setShowForm(false)
   }
@@ -59,13 +69,30 @@ export default function ProductsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Validación
+    if (!formData.name.trim()) {
+      setValidationError('El nombre del producto es requerido')
+      return
+    }
+    
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      setValidationError('El precio de venta debe ser mayor a 0')
+      return
+    }
+
+    setValidationError('')
 
     const productData = {
-      name: formData.name,
-      description: formData.description,
+      name: formData.name.trim(),
+      description: formData.description.trim(),
       price: parseFloat(formData.price),
+      purchase_price: parseFloat(formData.purchase_price) || parseFloat(formData.price),
       quantity: parseInt(formData.quantity) || 0,
-      sku: formData.sku,
+      minimum_quantity: parseInt(formData.minimum_quantity) || 10,
+      sku: formData.sku.trim(),
+      is_taxable: formData.is_taxable,
+      tax_percentage: parseFloat(formData.tax_percentage) || 19,
     }
 
     let result
@@ -86,12 +113,17 @@ export default function ProductsPage() {
 
   const handleEdit = (product) => {
     setFormData({
-      name: product.name,
+      name: product.name || '',
       description: product.description || '',
       price: product.price ? product.price.toString() : '0',
+      purchase_price: product.purchase_price ? product.purchase_price.toString() : product.price ? product.price.toString() : '0',
       quantity: product.quantity ? product.quantity.toString() : '0',
+      minimum_quantity: product.minimum_quantity ? product.minimum_quantity.toString() : '10',
       sku: product.sku || '',
+      is_taxable: product.is_taxable !== false,
+      tax_percentage: product.tax_percentage ? product.tax_percentage.toString() : '19',
     })
+    setValidationError('')
     setEditingId(product.id)
     setShowForm(true)
   }
@@ -179,6 +211,15 @@ export default function ProductsPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {validationError && (
+              <div className="bg-[var(--danger-bg)] border border-[var(--danger)] rounded-lg p-3 text-[var(--danger)] text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-sm">error</span>
+                  <span>{validationError}</span>
+                </div>
+              </div>
+            )}
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="form-group">
                 <label>Nombre del Producto *</label>
@@ -243,6 +284,21 @@ export default function ProductsPage() {
               </div>
 
               <div className="form-group">
+                <label>Precio de Compra ($)</label>
+                <input
+                  type="number"
+                  name="purchase_price"
+                  value={formData.purchase_price}
+                  onChange={handleInputChange}
+                  step="0.01"
+                  placeholder="0.00"
+                  className="font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="form-group">
                 <label>Stock Disponible</label>
                 <input
                   type="number"
@@ -253,6 +309,47 @@ export default function ProductsPage() {
                   className="font-mono"
                 />
               </div>
+
+              <div className="form-group">
+                <label>Stock Mínimo</label>
+                <input
+                  type="number"
+                  name="minimum_quantity"
+                  value={formData.minimum_quantity}
+                  onChange={handleInputChange}
+                  placeholder="10"
+                  className="font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="form-group flex items-center">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="is_taxable"
+                    checked={formData.is_taxable}
+                    onChange={(e) => setFormData({ ...formData, is_taxable: e.target.checked })}
+                  />
+                  <span>Sujeto a Impuesto</span>
+                </label>
+              </div>
+
+              {formData.is_taxable && (
+                <div className="form-group">
+                  <label>Porcentaje IVA (%)</label>
+                  <input
+                    type="number"
+                    name="tax_percentage"
+                    value={formData.tax_percentage}
+                    onChange={handleInputChange}
+                    step="0.01"
+                    placeholder="19"
+                    className="font-mono"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 justify-end mt-2">

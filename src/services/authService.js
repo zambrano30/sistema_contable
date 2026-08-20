@@ -2,7 +2,7 @@ import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 
 /**
  * Sign up a new user
- * @param {string} email - User email
+ * @param {string} email - User email or username
  * @param {string} password - User password
  * @returns {Promise<{ok: boolean, data?: Object, error?: string}>}
  */
@@ -14,21 +14,29 @@ export async function signUp(email, password) {
     }
   }
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-  })
+  try {
+    // Convert username to email format if needed
+    const emailToUse = email.includes('@') ? email : `${email}@facturapro.local`
+    
+    const { data, error } = await supabase.auth.signUp({
+      email: emailToUse,
+      password,
+    })
 
-  if (error) {
-    return { ok: false, error: error.message }
+    if (error) {
+      return { ok: false, error: error.message }
+    }
+
+    return { ok: true, data }
+  } catch (err) {
+    console.error('signUp exception:', err)
+    return { ok: false, error: 'No se pudo conectar con el servidor de Supabase (posiblemente pausado o inalcanzable).' }
   }
-
-  return { ok: true, data }
 }
 
 /**
  * Sign in user with email and password
- * @param {string} email - User email
+ * @param {string} email - User email or username
  * @param {string} password - User password
  * @returns {Promise<{ok: boolean, data?: Object, error?: string}>}
  */
@@ -40,16 +48,24 @@ export async function signIn(email, password) {
     }
   }
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+  try {
+    // Convert username to email format if needed
+    const emailToUse = email.includes('@') ? email : `${email}@facturapro.local`
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: emailToUse,
+      password,
+    })
 
-  if (error) {
-    return { ok: false, error: error.message }
+    if (error) {
+      return { ok: false, error: error.message }
+    }
+
+    return { ok: true, data }
+  } catch (err) {
+    console.error('signIn exception:', err)
+    return { ok: false, error: 'No se pudo conectar con el servidor de Supabase (posiblemente pausado o inalcanzable).' }
   }
-
-  return { ok: true, data }
 }
 
 /**
@@ -64,13 +80,18 @@ export async function signOut() {
     }
   }
 
-  const { error } = await supabase.auth.signOut()
+  try {
+    const { error } = await supabase.auth.signOut()
 
-  if (error) {
-    return { ok: false, error: error.message }
+    if (error) {
+      return { ok: false, error: error.message }
+    }
+
+    return { ok: true }
+  } catch (err) {
+    console.error('signOut exception:', err)
+    return { ok: false, error: err.message }
   }
-
-  return { ok: true }
 }
 
 /**
@@ -85,13 +106,18 @@ export async function getSession() {
     }
   }
 
-  const { data, error } = await supabase.auth.getSession()
+  try {
+    const { data, error } = await supabase.auth.getSession()
 
-  if (error) {
-    return { ok: false, error: error.message }
+    if (error) {
+      return { ok: false, error: error.message }
+    }
+
+    return { ok: true, data }
+  } catch (err) {
+    console.error('getSession exception:', err)
+    return { ok: false, error: err.message }
   }
-
-  return { ok: true, data }
 }
 
 /**

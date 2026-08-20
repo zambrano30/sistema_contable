@@ -11,7 +11,10 @@ export function Sidebar() {
   const menuItems = [
     { label: 'Dashboard', icon: 'dashboard', path: '/dashboard' },
     { label: 'Ventas', icon: 'receipt_long', path: '/sales' },
+    { label: 'Pagos', icon: 'payments', path: '/payments' },
     { label: 'Productos', icon: 'inventory_2', path: '/products' },
+    { label: 'Inventario', icon: 'warehouse', path: '/inventory' },
+    { label: 'Gastos', icon: 'trending_down', path: '/expenses' },
     { label: 'Clientes', icon: 'group', path: '/clients' },
   ]
 

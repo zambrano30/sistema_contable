@@ -1,0 +1,183 @@
+# 🔍 DIAGNÓSTICO RÁPIDO - SUPABASE
+
+```
+ESTADO GENERAL DEL PROYECTO
+═══════════════════════════════════════════════════════════════
+
+┌─ FRONTEND ────────────────────────────────────────────────┐
+│ ✅ Estructura completa (React + Vite)                      │
+│ ✅ Componentes formateados (dark mode)                     │
+│ ✅ Servicios implementados                                 │
+│ ✅ Páginas: Login, Dashboard, Products, Clients, Sales     │
+│ ✅ Manejo de autenticación                                 │
+│ ✅ Demo mode funcional                                     │
+└───────────────────────────────────────────────────────────┘
+
+┌─ SUPABASE CLIENT ─────────────────────────────────────────┐
+│ ✅ .env configurado                                        │
+│ ✅ Cliente inicializado                                    │
+│ ✅ Variables de ambiente: VITE_SUPABASE_URL              │
+│                          VITE_SUPABASE_ANON_KEY           │
+│ ❌ CONEXIÓN NO DISPONIBLE (Pausado o offline)             │
+└───────────────────────────────────────────────────────────┘
+
+┌─ BASE DE DATOS ───────────────────────────────────────────┐
+│ 🟡 users          - [Por crear]                            │
+│ 🟡 products       - [Por crear]                            │
+│ 🟡 clients        - [Por crear]                            │
+│ 🟡 invoices       - [Por crear]                            │
+│ 🟡 invoice_items  - [Por crear]                            │
+│ 🟡 categories     - [Por crear]                            │
+│ 🟡 RLS Policies   - [Por configurar]                       │
+└───────────────────────────────────────────────────────────┘
+
+┌─ AUTENTICACIÓN ───────────────────────────────────────────┐
+│ ✅ Auth Service       - Implementado                       │
+│ ✅ Demo Mode          - Funciona sin Supabase              │
+│ ✅ AuthContext        - Manejo de sesiones                │
+│ 🟡 Users en DB        - [Por crear en Supabase]           │
+└───────────────────────────────────────────────────────────┘
+
+┌─ PRODUCTOS ───────────────────────────────────────────────┐
+│ ✅ ProductsPage       - Mejorada con todos los campos      │
+│ ✅ Validaciones       - Nombre, precio requeridos          │
+│ ✅ Formulario         - Completo (precio, compra, etc)     │
+│ ✅ Mapeo de datos     - Correct (unit_price → price)       │
+│ ✅ Scanner QR/Barcode - Implementado                       │
+│ ❌ BD no accesible    - No puede guardar datos             │
+└───────────────────────────────────────────────────────────┘
+```
+
+## 🚨 PROBLEMA PRINCIPAL
+
+**Error:** `net::ERR_NAME_NOT_RESOLVED`
+
+```
+Lo que significa:
+  • Supabase está pausado, O
+  • La conexión de red no alcanza Supabase, O
+  • El dominio pnmzzgsgmqgzdwsodfla.supabase.co no responde
+```
+
+## ✅ SOLUCIÓN (Elige una)
+
+### Opción 1: Reactiva Supabase (Más fácil)
+```
+1. Abre: https://app.supabase.com
+2. Busca: pnmzzgsgmqgzdwsodfla
+3. Settings → General
+4. Haz click en "Unpause" si está pausado
+5. Espera 30 segundos
+6. npm run dev
+7. F5 en navegador
+8. ¡Listo!
+```
+
+### Opción 2: Crear todo nuevo (Alternativa)
+```
+1. Crea proyecto en: https://supabase.com
+2. Copia la URL y ANON_KEY
+3. Actualiza .env con los nuevos valores
+4. Ejecuta scripts SQL en Supabase SQL Editor
+5. npm run dev
+```
+
+## 📋 SCRIPTS SQL A EJECUTAR (en orden)
+
+### Paso 1: Crear Tablas (OBLIGATORIO)
+```
+Archivo: scripts/complete-supabase-backend.sql
+Ubicación: Supabase → SQL Editor → New Query
+Resultado: 6 tablas creadas (users, products, clients, etc)
+```
+
+### Paso 2: Configurar Seguridad (OPCIONAL)
+Elige UNA:
+
+**Para Desarrollo (Permisivo):**
+```
+Archivo: scripts/simple-rls-policies.sql
+Todos los usuarios autenticados pueden todo
+```
+
+**Para Producción (Seguro):**
+```
+Archivo: scripts/complete-setup.sql
+RLS estrictas + función ensure_user_exists()
+```
+
+## 🧪 VERIFICAR QUE FUNCIONA
+
+### Test 1: Desde Navegador
+```
+1. Abre: http://localhost:5173/products
+2. Click: "Nuevo Producto"
+3. Rellena formulario:
+   - Nombre: "Test Product"
+   - Precio venta: 100
+   - Stock: 5
+4. Click: "Crear Producto"
+5. ✅ Si aparece en la lista → Funciona
+```
+
+### Test 2: Desde Terminal
+```bash
+node scripts/validate-supabase.js
+```
+Muestra el estado de todo
+
+### Test 3: DevTools Console
+```javascript
+import { supabase } from '/src/lib/supabaseClient.js'
+const test = await supabase.from('products').select('count').single()
+console.log(test)
+```
+
+## 📊 RESUMEN DEL ESTADO
+
+| Componente | Estado | Acción |
+|-----------|--------|--------|
+| Frontend | ✅ Listo | Ninguna |
+| Servicios | ✅ Listos | Ninguna |
+| Variables .env | ✅ Configuradas | Ninguna |
+| Supabase Conexión | ❌ No accesible | **Reactiva o crea nuevo** |
+| Base de Datos | 🟡 No existe | Ejecuta SQL scripts |
+| RLS Policies | 🟡 No existe | Ejecuta RLS scripts |
+| Autenticación | ✅ Funciona (demo) | OK |
+| Demo Mode | ✅ Funciona | Permite pruebas sin BD |
+
+## 🎯 PRÓXIMOS PASOS
+
+```
+1. ⏱️  URGENTE: Reactiva Supabase en app.supabase.com
+   └─ Settings → General → Unpause
+   └─ Espera 30 segundos
+
+2. 🗄️  IMPORTANTE: Ejecuta scripts SQL en orden
+   └─ complete-supabase-backend.sql (tablas)
+   └─ simple-rls-policies.sql (seguridad)
+
+3. 🔄 REINICIA: npm run dev
+
+4. ✅ PRUEBA: Crea un producto en la UI
+
+5. 📖 DOCUMÉNTATE: Lee SUPABASE_SETUP.md
+```
+
+## 📚 DOCUMENTACIÓN
+
+- **SUPABASE_SETUP.md** - Guía completa de configuración
+- **SUPABASE_REVIEW.md** - Revisión detallada de todo
+- **scripts/validate-supabase.js** - Validador automático
+
+## 🆘 SI ALGO FALLA
+
+1. Abre DevTools: **F12**
+2. Ve a **Console** y busca errores rojos
+3. Lee el error completo
+4. Ejecuta: `node scripts/validate-supabase.js`
+5. Consulta: `SUPABASE_SETUP.md`
+
+---
+
+**¿Necesitas ayuda?** Revisa SUPABASE_SETUP.md sección "Errores Comunes"
