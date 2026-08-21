@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { supabase, isSupabaseConfigured } from '../lib/supabaseClient'
 
 export function Sidebar() {
   const navigate = useNavigate()
@@ -13,31 +12,25 @@ export function Sidebar() {
   const [pendingCommands, setPendingCommands] = useState(0)
   const fileInputRef = useRef(null)
   
-  // Obtener el rol del usuario desde Supabase
   const displayRole = user?.role || 'Administrador'
 
-  // Control document scroll cuando se abre/cierra el sidebar
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = 'auto'
     }
-
     return () => {
       document.body.style.overflow = 'auto'
     }
   }, [isOpen])
 
-  // Actualizar displayRole cuando cambie el usuario
   useEffect(() => {
-    // displayRole se actualiza automáticamente via user?.role
     if (user?.avatar_url) {
       setAvatarUrl(user.avatar_url)
     }
   }, [user])
 
-  // Cargar avatar del localStorage
   useEffect(() => {
     if (user?.id) {
       const savedAvatar = localStorage.getItem(`avatar_${user.id}`)
@@ -47,7 +40,6 @@ export function Sidebar() {
     }
   }, [user?.id])
 
-  // Cargar comandas pendientes cada 5 segundos
   useEffect(() => {
     const loadPendingCommands = () => {
       const isDemo = !!localStorage.getItem('demo_user')
@@ -69,20 +61,16 @@ export function Sidebar() {
 
     setUploading(true)
     try {
-      // Convertir imagen a base64
       const reader = new FileReader()
       reader.onloadend = () => {
         const base64 = reader.result
-        // Guardar en localStorage (funciona en modo demo y auth)
-        localStorage.setItem(`avatar_${user.id}`, base64)
+        localStorage.setItem(`avatar_${user?.id || 'demo'}`, base64)
         setAvatarUrl(base64)
         setUploading(false)
-        alert('✅ Foto guardada exitosamente')
       }
       reader.readAsDataURL(file)
     } catch (error) {
       console.error('Error:', error)
-      alert('❌ Error: ' + error.message)
       setUploading(false)
     } finally {
       if (fileInputRef.current) {
@@ -99,22 +87,18 @@ export function Sidebar() {
     { label: 'Gastos', icon: 'trending_down', path: '/expenses' },
   ]
 
-  // Menú dinámico según el rol
   let menuItems = baseMenuItems
 
   if (user?.role === 'Cocinero') {
-    // Los cocineros solo ven Cocina
     menuItems = [
       { label: 'Cocina', icon: 'restaurant_menu', path: '/kitchen' },
     ]
   } else if (user?.role === 'Vendedor') {
-    // Los vendedores solo ven Ventas y Clientes
     menuItems = [
       { label: 'Ventas', icon: 'receipt_long', path: '/sales' },
       { label: 'Clientes', icon: 'group', path: '/clients' },
     ]
   } else if (user?.role === 'Administrador') {
-    // Los administradores ven el menú completo + Dashboard + Administración
     menuItems = [
       ...baseMenuItems,
       { label: 'Dashboard', icon: 'dashboard', path: '/dashboard' },
@@ -129,19 +113,13 @@ export function Sidebar() {
     navigate('/')
   }
 
-  // Get current page title
-  const getCurrentTitle = () => {
-    const activeItem = menuItems.find(item => item.path === location.pathname)
-    return activeItem ? activeItem.label : 'FacturaPro'
-  }
-
   return (
     <>
-      {/* Top Glassmorphism Header */}
+      {/* Top Glass Header */}
       <header className="top-header">
         <div className="flex items-center gap-3">
           <button 
-            className="lg:hidden text-[var(--text-primary)] text-2xl cursor-pointer bg-none border-none p-1"
+            className="lg:hidden text-white hover:text-[var(--accent-orange)] text-2xl cursor-pointer bg-none border-none p-1 flex items-center"
             onClick={() => setIsOpen(!isOpen)}
             aria-label="Abrir menú"
           >
@@ -156,12 +134,17 @@ export function Sidebar() {
           </div>
         </div>
 
-        <div className="header-user">
+        <div className="header-user flex items-center gap-3">
+          <div className="hidden md:flex flex-col text-right">
+            <span className="text-xs font-semibold text-[var(--text-primary)]">{user?.email || 'Usuario Demo'}</span>
+            <span className="user-badge self-end mt-0.5">{displayRole}</span>
+          </div>
+
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="w-10 h-10 rounded-full bg-[var(--accent-orange)] flex items-center justify-center text-white font-bold text-sm hover:opacity-80 transition-opacity cursor-pointer border-2 border-[var(--accent-orange)] overflow-hidden"
-            title={uploading ? 'Subiendo...' : 'Click para cambiar foto'}
+            className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[var(--accent-orange)] to-[#ff7b00] flex items-center justify-center text-white font-bold text-sm hover:scale-105 transition-all cursor-pointer border border-white/20 shadow-lg shadow-[var(--accent-orange)]/20 overflow-hidden"
+            title={uploading ? 'Subiendo...' : 'Cambiar foto de perfil'}
           >
             {avatarUrl ? (
               <img
@@ -192,18 +175,16 @@ export function Sidebar() {
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <h2>
-            <span className="material-symbols-outlined text-[var(--accent-orange)]">space_dashboard</span>
-            <span>{displayRole}</span>
+            <span className="material-symbols-outlined text-[var(--accent-orange)]">shield_person</span>
+            <span>Panel {displayRole}</span>
           </h2>
           <button 
-            className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] bg-none border-none cursor-pointer lg:hidden"
+            className="text-[var(--text-tertiary)] hover:text-white bg-none border-none cursor-pointer lg:hidden flex items-center"
             onClick={() => setIsOpen(false)}
           >
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
-
-        
 
         <nav className="sidebar-nav">
           {menuItems.map((item) => (
@@ -218,7 +199,7 @@ export function Sidebar() {
               <span className="material-symbols-outlined nav-icon">{item.icon}</span>
               <span className="nav-label">{item.label}</span>
               {item.label === 'Cocina' && pendingCommands > 0 && (
-                <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
                   {pendingCommands}
                 </span>
               )}
@@ -226,7 +207,7 @@ export function Sidebar() {
           ))}
         </nav>
 
-        <div className="sidebar-footer">
+        <div className="p-4 border-t border-[var(--border-color)]">
           <button className="logout-btn" onClick={handleLogout}>
             <span className="material-symbols-outlined">logout</span>
             <span>Cerrar sesión</span>
@@ -234,7 +215,7 @@ export function Sidebar() {
         </div>
       </aside>
 
-      {/* Mobile Bottom Navigation Bar (Stitch Design) */}
+      {/* Mobile Bottom Navigation Bar */}
       <nav className="bottom-nav">
         {menuItems.map((item) => (
           <button
@@ -242,10 +223,10 @@ export function Sidebar() {
             className={`bottom-nav-item ${isActive(item.path) ? 'active' : ''} relative`}
             onClick={() => navigate(item.path)}
           >
-            <span className="material-symbols-outlined">{item.icon === 'dashboard' ? 'home' : item.icon}</span>
+            <span className="material-symbols-outlined">{item.icon === 'dashboard' ? 'grid_view' : item.icon}</span>
             <span>{item.label}</span>
             {item.label === 'Cocina' && pendingCommands > 0 && (
-              <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+              <span className="absolute top-0 right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
                 {pendingCommands}
               </span>
             )}

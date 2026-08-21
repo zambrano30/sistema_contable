@@ -32,7 +32,6 @@ export default function LoginPage() {
           navigate('/sales')
         }
       } else {
-        // Fallback to demo mode
         loginAsDemo(email)
         navigate('/sales')
       }
@@ -49,18 +48,31 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="auth-container">
-      <div className="auth-card">
+    <main className="auth-container relative overflow-hidden">
+      {/* Decorative Glow Elements */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[var(--accent-orange)]/15 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-10 right-10 w-72 h-72 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div className="auth-card relative z-10">
         {/* Brand Header */}
         <div className="auth-header">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--accent-orange)] to-[#e65100] flex items-center justify-center text-white mx-auto shadow-lg shadow-[var(--accent-orange)]/25 mb-3">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[var(--accent-orange)] to-[#ff7b00] flex items-center justify-center text-white mx-auto shadow-xl shadow-[var(--accent-orange)]/30 mb-4 border border-white/20">
             <span className="material-symbols-outlined text-3xl">receipt_long</span>
           </div>
-          <h1>FacturaPro</h1>
-          <p>{isSignUp ? 'Crea tu cuenta profesional' : 'Accede a tu plataforma contable'}</p>
+          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-[var(--text-secondary)] bg-clip-text text-transparent">
+            FacturaPro
+          </h1>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
+            {isSignUp ? 'Crea tu cuenta profesional de facturación' : 'Sistema Contable y Facturación Electrónica'}
+          </p>
         </div>
 
-        {error && <div className="error-message mb-4">{error}</div>}
+        {error && (
+          <div className="error-message mb-5 flex items-center gap-2">
+            <span className="material-symbols-outlined text-lg">error</span>
+            <span>{error}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="form-group">
@@ -71,11 +83,11 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu@correo.com"
-                className="w-full pl-10"
+                placeholder="usuario@empresa.com"
+                className="w-full pl-11"
                 required
               />
-              <span className="material-symbols-outlined absolute left-3 text-[var(--text-tertiary)] text-xl pointer-events-none">
+              <span className="material-symbols-outlined absolute left-3.5 text-[var(--text-tertiary)] text-xl pointer-events-none">
                 mail
               </span>
             </div>
@@ -90,10 +102,10 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10"
+                className="w-full pl-11"
                 required
               />
-              <span className="material-symbols-outlined absolute left-3 text-[var(--text-tertiary)] text-xl pointer-events-none">
+              <span className="material-symbols-outlined absolute left-3.5 text-[var(--text-tertiary)] text-xl pointer-events-none">
                 lock
               </span>
             </div>
@@ -102,7 +114,7 @@ export default function LoginPage() {
           <button 
             type="submit" 
             disabled={loading} 
-            className="btn-primary w-full justify-center py-3 text-base mt-1"
+            className="btn-primary w-full justify-center py-3.5 text-base mt-2"
           >
             <span className="material-symbols-outlined">
               {isSignUp ? 'person_add' : 'login'}
@@ -113,25 +125,26 @@ export default function LoginPage() {
                   ? 'Creando cuenta...'
                   : 'Iniciando sesión...'
                 : isSignUp
-                  ? 'Crear Cuenta'
-                  : 'Iniciar Sesión'}
+                  ? 'Crear Cuenta Profesional'
+                  : 'Ingresar al Sistema'}
             </span>
           </button>
         </form>
 
         {/* Demo Mode Button */}
-        <div className="mt-4 pt-4 border-t border-[var(--border-light)] text-center">
+        <div className="mt-6 pt-5 border-t border-[var(--border-color)] text-center">
+          <p className="text-xs text-[var(--text-tertiary)] mb-3">¿Deseas probar la plataforma sin registrarte?</p>
           <button 
             onClick={handleDemoAccess}
-            className="btn-secondary w-full justify-center py-2.5 text-sm"
+            className="btn-secondary w-full justify-center py-3 text-sm hover:border-[var(--accent-orange)]/40"
           >
-            <span className="material-symbols-outlined text-[var(--accent-orange)]">bolt</span>
-            <span>Acceso Rápido / Modo Demo</span>
+            <span className="material-symbols-outlined text-[var(--accent-orange)] animate-pulse">bolt</span>
+            <span>Acceso Instantáneo Modo Demo</span>
           </button>
         </div>
 
-        <div className="auth-toggle mt-4">
-          <p className="m-0">
+        <div className="auth-toggle mt-5 text-center">
+          <p className="text-sm text-[var(--text-secondary)] m-0">
             {isSignUp ? '¿Ya tienes una cuenta?' : '¿No tienes cuenta aún?'}{' '}
             <button
               type="button"
