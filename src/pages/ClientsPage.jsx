@@ -157,9 +157,6 @@ export default function ClientsPage() {
       {/* Header */}
       <header className="page-header">
         <div>
-          <span className="text-[0.75rem] font-bold text-[var(--accent-orange-light)] uppercase tracking-wider">
-            Lumina Ledger • Clientes
-          </span>
           <h1 className="mt-1">
             <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">group</span>
             <span>Gestión de Clientes</span>

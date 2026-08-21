@@ -188,9 +188,6 @@ export default function ExpensesPage() {
       {/* Header */}
       <header className="page-header">
         <div>
-          <span className="text-[0.75rem] font-bold text-[var(--accent-orange-light)] uppercase tracking-wider">
-            Lumina Ledger • Gastos
-          </span>
           <h1 className="mt-1">
             <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">receipt_long</span>
             <span>Gestión de Gastos</span>

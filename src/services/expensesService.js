@@ -31,13 +31,13 @@ export async function getAllExpenses(filters = {}) {
     const { data, error } = await query
 
     if (error) {
-      console.error('Get expenses error:', error)
+      // Database query failed
       return { ok: false, error: error.message }
     }
 
     return { ok: true, data: data || [] }
   } catch (err) {
-    console.error('Get expenses exception:', err)
+    // Exception occurred during query
     return { ok: false, error: err.message }
   }
 }
@@ -59,13 +59,13 @@ export async function getExpensesByCategory(category) {
       .order('expense_date', { ascending: false })
 
     if (error) {
-      console.error('Get expenses by category error:', error)
+      // Database query failed
       return { ok: false, error: error.message }
     }
 
     return { ok: true, data: data || [] }
   } catch (err) {
-    console.error('Get expenses by category exception:', err)
+    // Exception occurred during query
     return { ok: false, error: err.message }
   }
 }
@@ -86,14 +86,14 @@ export async function calculateProductCost(productName) {
       .eq('is_active', true)
 
     if (error) {
-      console.error('Calculate product cost error:', error)
+      // Calculation failed
       return { ok: false, error: error.message }
     }
 
     const totalCost = (data || []).reduce((sum, exp) => sum + (exp.amount || 0), 0)
     return { ok: true, data: totalCost }
   } catch (err) {
-    console.error('Calculate product cost exception:', err)
+    // Calculation error
     return { ok: false, error: err.message }
   }
 }
@@ -119,14 +119,14 @@ export async function getTotalExpensesByCategory(category, startDate = null, end
     const { data, error } = await query
 
     if (error) {
-      console.error('Get total expenses error:', error)
+      // Aggregation query failed
       return { ok: false, error: error.message }
     }
 
     const total = (data || []).reduce((sum, exp) => sum + (exp.amount || 0), 0)
     return { ok: true, data: total }
   } catch (err) {
-    console.error('Get total expenses exception:', err)
+    // Aggregation error
     return { ok: false, error: err.message }
   }
 }
@@ -164,13 +164,13 @@ export async function createExpense(expenseData) {
       .select()
 
     if (error) {
-      console.error('Create expense error:', error)
+      // Create operation failed
       return { ok: false, error: error.message }
     }
 
     return { ok: true, data: data[0] }
   } catch (err) {
-    console.error('Create expense exception:', err)
+    // Insert failed
     return { ok: false, error: err.message }
   }
 }
@@ -194,13 +194,13 @@ export async function updateExpense(id, updates) {
       .select()
 
     if (error) {
-      console.error('Update expense error:', error)
+      // Update failed
       return { ok: false, error: error.message }
     }
 
     return { ok: true, data: data[0] }
   } catch (err) {
-    console.error('Update expense exception:', err)
+    // Exception occurred
     return { ok: false, error: err.message }
   }
 }
@@ -220,13 +220,13 @@ export async function deleteExpense(id) {
       .eq('id', id)
 
     if (error) {
-      console.error('Delete expense error:', error)
+      // Delete operation failed
       return { ok: false, error: error.message }
     }
 
     return { ok: true }
   } catch (err) {
-    console.error('Delete expense exception:', err)
+    // Exception occurred
     return { ok: false, error: err.message }
   }
 }

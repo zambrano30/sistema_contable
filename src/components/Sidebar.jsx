@@ -92,10 +92,9 @@ export function Sidebar() {
   }
 
   const baseMenuItems = [
-    { label: 'Dashboard', icon: 'dashboard', path: '/dashboard' },
+    { label: 'Ventas', icon: 'receipt_long', path: '/sales' },
     { label: 'Clientes', icon: 'group', path: '/clients' },
     { label: 'Inventario', icon: 'warehouse', path: '/inventory' },
-    { label: 'Ventas', icon: 'receipt_long', path: '/sales' },
     { label: 'Cocina', icon: 'restaurant_menu', path: '/kitchen' },
     { label: 'Gastos', icon: 'trending_down', path: '/expenses' },
   ]
@@ -108,10 +107,17 @@ export function Sidebar() {
     menuItems = [
       { label: 'Cocina', icon: 'restaurant_menu', path: '/kitchen' },
     ]
+  } else if (user?.role === 'Vendedor') {
+    // Los vendedores solo ven Ventas y Clientes
+    menuItems = [
+      { label: 'Ventas', icon: 'receipt_long', path: '/sales' },
+      { label: 'Clientes', icon: 'group', path: '/clients' },
+    ]
   } else if (user?.role === 'Administrador') {
-    // Los administradores ven el menú completo + Administración
+    // Los administradores ven el menú completo + Dashboard + Administración
     menuItems = [
       ...baseMenuItems,
+      { label: 'Dashboard', icon: 'dashboard', path: '/dashboard' },
       { label: 'Administración', icon: 'admin_panel_settings', path: '/admin' },
     ]
   }
@@ -142,7 +148,7 @@ export function Sidebar() {
             <span className="material-symbols-outlined">menu</span>
           </button>
           
-          <div className="header-brand cursor-pointer" onClick={() => navigate('/dashboard')}>
+          <div className="header-brand cursor-pointer" onClick={() => navigate('/sales')}>
             <div className="header-logo-icon">
               <span className="material-symbols-outlined">receipt_long</span>
             </div>

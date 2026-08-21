@@ -24,17 +24,17 @@ export default function LoginPage() {
       if (result.ok) {
         if (isSignUp && !result.data?.session) {
           loginAsDemo(email)
-          navigate('/dashboard')
+          navigate('/sales')
         } else if (result.data?.session?.user) {
-          navigate('/dashboard')
+          navigate('/sales')
         } else {
           loginAsDemo(email)
-          navigate('/dashboard')
+          navigate('/sales')
         }
       } else {
         // Fallback to demo mode
         loginAsDemo(email)
-        navigate('/dashboard')
+        navigate('/sales')
       }
     } catch (err) {
       setError('Error inesperado. Intenta de nuevo.')
@@ -45,7 +45,7 @@ export default function LoginPage() {
 
   const handleDemoAccess = () => {
     loginAsDemo('admin@facturapro.com')
-    navigate('/dashboard')
+    navigate('/sales')
   }
 
   return (

@@ -29,7 +29,7 @@ export async function signUp(email, password) {
 
     return { ok: true, data }
   } catch (err) {
-    console.error('signUp exception:', err)
+    // Supabase connection issue - service may be paused or unreachable
     return { ok: false, error: 'No se pudo conectar con el servidor de Supabase (posiblemente pausado o inalcanzable).' }
   }
 }
@@ -63,7 +63,7 @@ export async function signIn(email, password) {
 
     return { ok: true, data }
   } catch (err) {
-    console.error('signIn exception:', err)
+    // Supabase connection issue - service may be paused or unreachable
     return { ok: false, error: 'No se pudo conectar con el servidor de Supabase (posiblemente pausado o inalcanzable).' }
   }
 }
@@ -89,7 +89,7 @@ export async function signOut() {
 
     return { ok: true }
   } catch (err) {
-    console.error('signOut exception:', err)
+    // Handle sign out errors silently
     return { ok: false, error: err.message }
   }
 }
@@ -115,7 +115,7 @@ export async function getSession() {
 
     return { ok: true, data }
   } catch (err) {
-    console.error('getSession exception:', err)
+    // Handle session retrieval errors silently
     return { ok: false, error: err.message }
   }
 }

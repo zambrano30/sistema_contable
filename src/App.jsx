@@ -35,7 +35,7 @@ function AppContent() {
 
   return (
     <Routes>
-      <Route path="/" element={user ? <Navigate to={user.role === 'Cocinero' ? '/kitchen' : '/dashboard'} /> : <LoginPage />} />
+      <Route path="/" element={user ? <Navigate to={user.role === 'Cocinero' ? '/kitchen' : '/sales'} /> : <LoginPage />} />
       <Route
         path="/dashboard"
         element={

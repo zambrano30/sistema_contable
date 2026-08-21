@@ -1,12 +1,6 @@
--- Limpieza: Eliminar función anterior si existe
-DROP FUNCTION IF EXISTS create_cook_user_direct(TEXT, TEXT, TEXT);
-
--- Crear extensión pgcrypto si no existe
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
--- Función RPC: registra cocinero en tabla users con UUID válido de auth.users
+-- Función RPC: registra vendedor en tabla users con UUID válido de auth.users
 -- El cliente primero crea el usuario en auth.users, luego llama esta función
-CREATE OR REPLACE FUNCTION register_cook_user(
+CREATE OR REPLACE FUNCTION register_vendor_user(
   p_user_id UUID,
   p_email TEXT,
   p_name TEXT
@@ -47,11 +41,11 @@ BEGIN
       p_user_id,
       p_email,
       p_name,
-      'cooker',
+      'saler',
       NOW()
     );
 
-    RETURN QUERY SELECT TRUE, p_user_id, 'Cook user registered successfully!'::TEXT;
+    RETURN QUERY SELECT TRUE, p_user_id, 'Vendor user registered successfully!'::TEXT;
 
   EXCEPTION WHEN OTHERS THEN
     RETURN QUERY SELECT FALSE, NULL::UUID, SQLERRM::TEXT;
@@ -60,9 +54,4 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Otorgar permisos para llamar esta función
-GRANT EXECUTE ON FUNCTION register_cook_user(UUID, TEXT, TEXT) TO authenticated, anon, service_role;
-
-
-
-
-
+GRANT EXECUTE ON FUNCTION register_vendor_user(UUID, TEXT, TEXT) TO authenticated, anon, service_role;

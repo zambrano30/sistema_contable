@@ -26,13 +26,13 @@ export async function getAllInvoices(filters = {}) {
     const { data, error } = await query
 
     if (error) {
-      console.error('Get invoices error:', error)
+      // Database query failed
       return { ok: false, error: error.message }
     }
 
     return { ok: true, data: data || [] }
   } catch (err) {
-    console.error('Get invoices exception:', err)
+    // Exception occurred during query
     return { ok: false, error: err.message }
   }
 }
@@ -227,6 +227,10 @@ export async function createInvoice(invoiceData) {
       return { ok: false, error: 'Could not verify user in database' }
     }
 
+    // Get current user ID
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const userId = user?.id
+
     const { items, ...invoice } = invoiceData
 
     // Create invoice
@@ -235,6 +239,7 @@ export async function createInvoice(invoiceData) {
       .insert([
         {
           client_id: invoice.client_id,
+          user_id: userId,
           invoice_date: invoice.invoice_date || new Date().toISOString(),
           due_date: invoice.due_date,
           status: 'draft',
@@ -248,7 +253,7 @@ export async function createInvoice(invoiceData) {
       .select()
 
     if (invoiceError) {
-      console.error('Create invoice error:', invoiceError)
+      // Create operation failed
       return { ok: false, error: invoiceError.message }
     }
 
@@ -272,14 +277,14 @@ export async function createInvoice(invoiceData) {
         .insert(itemsData)
 
       if (itemsError) {
-        console.error('Create invoice items error:', itemsError)
+        // Item insertion failed
         return { ok: false, error: itemsError.message }
       }
     }
 
     return { ok: true, data: newInvoice }
   } catch (err) {
-    console.error('Create invoice exception:', err)
+    // Exception occurred
     return { ok: false, error: err.message }
   }
 }

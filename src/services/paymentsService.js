@@ -26,13 +26,13 @@ export async function getAllPayments(filters = {}) {
     const { data, error } = await query
 
     if (error) {
-      console.error('Get payments error:', error)
+      // Database query failed
       return { ok: false, error: error.message }
     }
 
     return { ok: true, data: data || [] }
   } catch (err) {
-    console.error('Get payments exception:', err)
+    // Exception occurred during query
     return { ok: false, error: err.message }
   }
 }
@@ -67,13 +67,13 @@ export async function createPayment(paymentData) {
       .select()
 
     if (error) {
-      console.error('Create payment error:', error)
+      // Create operation failed
       return { ok: false, error: error.message }
     }
 
     return { ok: true, data: data[0] }
   } catch (err) {
-    console.error('Create payment exception:', err)
+    // Exception occurred
     return { ok: false, error: err.message }
   }
 }
@@ -92,7 +92,7 @@ export async function getPaymentStats() {
       .select('amount')
 
     if (error) {
-      console.error('Get payment stats error:', error)
+      // Stats aggregation failed
       return { ok: false, error: error.message }
     }
 
@@ -107,7 +107,7 @@ export async function getPaymentStats() {
       },
     }
   } catch (err) {
-    console.error('Get payment stats exception:', err)
+    // Aggregation error
     return { ok: false, error: err.message }
   }
 }
@@ -128,13 +128,13 @@ export async function getPendingPayments() {
       .order('due_date', { ascending: true })
 
     if (error) {
-      console.error('Get pending payments error:', error)
+      // Query failed
       return { ok: false, error: error.message }
     }
 
     return { ok: true, data: data || [] }
   } catch (err) {
-    console.error('Get pending payments exception:', err)
+    // Exception occurred
     return { ok: false, error: err.message }
   }
 }
@@ -154,13 +154,13 @@ export async function deletePayment(id) {
       .eq('id', id)
 
     if (error) {
-      console.error('Delete payment error:', error)
+      // Delete operation failed
       return { ok: false, error: error.message }
     }
 
     return { ok: true }
   } catch (err) {
-    console.error('Delete payment exception:', err)
+    // Exception occurred
     return { ok: false, error: err.message }
   }
 }

@@ -26,13 +26,13 @@ export async function getAllInventoryMovements(filters = {}) {
     const { data, error } = await query
 
     if (error) {
-      console.error('Get inventory movements error:', error)
+      // Database query failed
       return { ok: false, error: error.message }
     }
 
     return { ok: true, data: data || [] }
   } catch (err) {
-    console.error('Get inventory movements exception:', err)
+    // Exception occurred during query
     return { ok: false, error: err.message }
   }
 }
@@ -79,7 +79,7 @@ export async function createInventoryMovement(movementData) {
       .select()
 
     if (movementError) {
-      console.error('Create inventory movement error:', movementError)
+      // Create operation failed
       return { ok: false, error: movementError.message }
     }
 
@@ -101,7 +101,7 @@ export async function createInventoryMovement(movementData) {
       .eq('id', movementData.product_id)
 
     if (updateError) {
-      console.error('Update product quantity error:', updateError)
+      // Quantity update failed (movement recorded)
       // Movement recorded but quantity not updated - this is a partial failure
     }
 
@@ -129,13 +129,13 @@ export async function getLowStockProducts() {
       .order('quantity_on_hand', { ascending: true })
 
     if (error) {
-      console.error('Get low stock products error:', error)
+      // Database query failed
       return { ok: false, error: error.message }
     }
 
     return { ok: true, data: data || [] }
   } catch (err) {
-    console.error('Get low stock products exception:', err)
+    // Exception occurred during query
     return { ok: false, error: err.message }
   }
 }
@@ -155,7 +155,7 @@ export async function getInventorySummary() {
       .eq('is_active', true)
 
     if (error) {
-      console.error('Get inventory summary error:', error)
+      // Summary calculation failed
       return { ok: false, error: error.message }
     }
 
@@ -173,7 +173,7 @@ export async function getInventorySummary() {
       },
     }
   } catch (err) {
-    console.error('Get inventory summary exception:', err)
+    // Calculation error
     return { ok: false, error: err.message }
   }
 }

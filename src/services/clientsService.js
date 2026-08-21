@@ -21,13 +21,13 @@ export async function getAllClients() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Clients query error:', error)
+      // Database query failed - log details for debugging
       return { ok: false, error: error.message }
     }
 
     return { ok: true, data }
   } catch (err) {
-    console.error('Clients fetch exception:', err)
+    // Handle unexpected errors silently
     return { ok: false, error: err.message }
   }
 }
@@ -88,13 +88,13 @@ export async function createClient(client) {
     const { data, error } = await supabase.from('clients').insert([clientData]).select()
 
     if (error) {
-      console.error('Create client error:', error)
+      // Database insert failed - log details for debugging
       return { ok: false, error: error.message }
     }
 
     return { ok: true, data: data[0] }
   } catch (err) {
-    console.error('Create client exception:', err)
+    // Handle unexpected errors silently
     return { ok: false, error: err.message }
   }
 }

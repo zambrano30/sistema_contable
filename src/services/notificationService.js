@@ -24,6 +24,6 @@ export const playNotificationSound = () => {
       oscillator.stop(endTime)
     }
   } catch (error) {
-    console.log('Audio notification not available')
+    // Web Audio API not available - notification system operates silently
   }
 }

@@ -27,7 +27,7 @@ export async function getAllProducts() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Products query error:', error)
+      // Database query failed
       return { ok: false, error: error.message }
     }
 
@@ -40,7 +40,7 @@ export async function getAllProducts() {
 
     return { ok: true, data: mappedData }
   } catch (err) {
-    console.error('Products fetch exception:', err)
+    // Exception occurred during fetch
     return { ok: false, error: err.message }
   }
 }
@@ -112,13 +112,13 @@ export async function createProduct(product) {
       .select()
 
     if (error) {
-      console.error('Create product error:', error)
+      // Create operation failed
       return { ok: false, error: error.message }
     }
 
     return { ok: true, data: data[0] }
   } catch (err) {
-    console.error('Create product exception:', err)
+    // Insert failed
     return { ok: false, error: err.message }
   }
 }
@@ -160,13 +160,13 @@ export async function updateProduct(id, updates) {
       .select()
 
     if (error) {
-      console.error('Update product error:', error)
+      // Update failed
       return { ok: false, error: error.message }
     }
 
     return { ok: true, data: data[0] }
   } catch (err) {
-    console.error('Update product exception:', err)
+    // Exception occurred
     return { ok: false, error: err.message }
   }
 }
