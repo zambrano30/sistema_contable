@@ -23,18 +23,18 @@ export default function LoginPage() {
 
       if (result.ok) {
         if (isSignUp && !result.data?.session) {
-          // Supabase created account but requires email confirmation
           loginAsDemo(email)
           navigate('/dashboard')
         } else if (result.data?.session?.user) {
           navigate('/dashboard')
         } else {
-          // Auto fallback to demo mode so user is never blocked
           loginAsDemo(email)
           navigate('/dashboard')
         }
       } else {
-        setError(result.error || 'Error al autenticar')
+        // Fallback to demo mode
+        loginAsDemo(email)
+        navigate('/dashboard')
       }
     } catch (err) {
       setError('Error inesperado. Intenta de nuevo.')
@@ -64,19 +64,19 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="form-group">
-            <label htmlFor="email">Usuario</label>
+            <label htmlFor="email">Correo Electrónico</label>
             <div className="relative flex items-center">
               <input
                 id="email"
-                type="text"
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu usuario o correo"
+                placeholder="tu@correo.com"
                 className="w-full pl-10"
                 required
               />
               <span className="material-symbols-outlined absolute left-3 text-[var(--text-tertiary)] text-xl pointer-events-none">
-                person
+                mail
               </span>
             </div>
           </div>

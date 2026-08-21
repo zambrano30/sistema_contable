@@ -1,7 +1,32 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { getSession, onAuthStateChange, signOut } from '../services/authService'
+import { getCurrentUser } from '../services/userService'
 
 const AuthContext = createContext()
+
+// Función para traducir y capitalizar roles
+const normalizeRole = (role) => {
+  if (!role) return 'Administrador'
+  
+  const roleMap = {
+    'admin': 'Administrador',
+    'administrator': 'Administrador',
+    'administrador': 'Administrador',
+    'seller': 'Vendedor',
+    'vendedor': 'Vendedor',
+    'accountant': 'Contador',
+    'contador': 'Contador',
+    'manager': 'Gerente',
+    'gerente': 'Gerente',
+    'cook': 'Cocinero',
+    'cocinero': 'Cocinero',
+    'chef': 'Cocinero',
+  }
+  
+  const normalized = roleMap[role.toLowerCase()] || role
+  // Capitalizar primera letra
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -24,7 +49,22 @@ export function AuthProvider({ children }) {
       const result = await getSession()
 
       if (result.ok && result.data?.session) {
-        setUser(result.data.session.user)
+        const authUser = result.data.session.user
+        // Obtener datos del usuario desde la tabla users (incluyendo rol)
+        const dbUser = await getCurrentUser()
+        
+        if (dbUser) {
+          // Combinar datos de autenticación con datos de base de datos
+          const userData = {
+            ...authUser,
+            role: normalizeRole(dbUser.role || 'Administrador')
+          }
+          setUser(userData)
+        } else {
+          // Si no existe en BD, crear con rol por defecto
+          authUser.role = 'Administrador'
+          setUser(authUser)
+        }
       }
 
       setLoading(false)
@@ -34,17 +74,33 @@ export function AuthProvider({ children }) {
 
     const unsubscribe = onAuthStateChange((session) => {
       if (!localStorage.getItem('demo_user')) {
-        setUser(session?.user ?? null)
+        if (session?.user) {
+          // Obtener rol desde BD cuando cambia la sesión
+          getCurrentUser().then(dbUser => {
+            const userData = {
+              ...session.user,
+              role: normalizeRole(dbUser?.role || 'Administrador')
+            }
+            setUser(userData)
+          }).catch(() => {
+            // Fallback si hay error
+            session.user.role = 'Administrador'
+            setUser(session.user)
+          })
+        } else {
+          setUser(null)
+        }
       }
     })
 
     return unsubscribe
   }, [])
 
-  const loginAsDemo = (customEmail) => {
+  const loginAsDemo = (email) => {
     const demoUserObj = { 
-      email: customEmail || 'admin@facturapro.com', 
-      id: 'demo-user-admin' 
+      email: email || 'admin@facturapro.com',
+      id: 'demo-user-admin',
+      role: 'Administrador'
     }
     localStorage.setItem('demo_user', JSON.stringify(demoUserObj))
     setUser(demoUserObj)

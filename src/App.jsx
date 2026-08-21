@@ -5,12 +5,12 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { Layout } from './components/Layout'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
-import ProductsPage from './pages/ProductsPage'
 import ClientsPage from './pages/ClientsPage'
 import SalesPage from './pages/SalesPage'
-import PaymentsPage from './pages/PaymentsPage'
 import InventoryPage from './pages/InventoryPage'
 import ExpensesPage from './pages/ExpensesPage'
+import KitchenPage from './pages/KitchenPage'
+import AdminPage from './pages/AdminPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -35,23 +35,13 @@ function AppContent() {
 
   return (
     <Routes>
-      <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
+      <Route path="/" element={user ? <Navigate to={user.role === 'Cocinero' ? '/kitchen' : '/dashboard'} /> : <LoginPage />} />
       <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
             <Layout>
               <DashboardPage />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/products"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <ProductsPage />
             </Layout>
           </ProtectedRoute>
         }
@@ -77,16 +67,6 @@ function AppContent() {
         }
       />
       <Route
-        path="/payments"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <PaymentsPage />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/inventory"
         element={
           <ProtectedRoute>
@@ -102,6 +82,26 @@ function AppContent() {
           <ProtectedRoute>
             <Layout>
               <ExpensesPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/kitchen"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <KitchenPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <AdminPage />
             </Layout>
           </ProtectedRoute>
         }

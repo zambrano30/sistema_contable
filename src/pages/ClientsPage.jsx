@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { getAllClients, createClient, updateClient, deleteClient } from '../services/clientsService'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function ClientsPage() {
+  const { user } = useAuth()
+  const isDemo = !!localStorage.getItem('demo_user')
+  
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -13,6 +17,7 @@ export default function ClientsPage() {
     email: '',
     phone: '',
     address: '',
+    tax_id: '',
   })
 
   useEffect(() => {
@@ -21,12 +26,17 @@ export default function ClientsPage() {
 
   const loadClients = async () => {
     setLoading(true)
-    const result = await getAllClients()
-
-    if (result.ok) {
-      setClients(result.data || [])
+    
+    if (isDemo) {
+      const demoClients = JSON.parse(localStorage.getItem('demo_clients') || '[]')
+      setClients(demoClients)
     } else {
-      setError(result.error)
+      const result = await getAllClients()
+      if (result.ok) {
+        setClients(result.data || [])
+      } else {
+        setError(result.error)
+      }
     }
 
     setLoading(false)
@@ -43,6 +53,7 @@ export default function ClientsPage() {
       email: '',
       phone: '',
       address: '',
+      tax_id: '',
     })
     setEditingId(null)
     setShowForm(false)
@@ -51,26 +62,54 @@ export default function ClientsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
+    if (!formData.name.trim()) {
+      setError('El nombre del cliente es requerido')
+      return
+    }
+
     const clientData = {
       name: formData.name,
       email: formData.email,
       phone: formData.phone,
       address: formData.address,
+      tax_id: formData.tax_id,
     }
 
-    let result
-
-    if (editingId) {
-      result = await updateClient(editingId, clientData)
-    } else {
-      result = await createClient(clientData)
-    }
-
-    if (result.ok) {
+    if (isDemo) {
+      const demoClients = JSON.parse(localStorage.getItem('demo_clients') || '[]')
+      
+      if (editingId) {
+        const index = demoClients.findIndex(c => c.id === editingId)
+        if (index >= 0) {
+          demoClients[index] = { ...demoClients[index], ...clientData }
+        }
+      } else {
+        const newClient = {
+          id: Date.now(),
+          ...clientData
+        }
+        demoClients.push(newClient)
+      }
+      
+      localStorage.setItem('demo_clients', JSON.stringify(demoClients))
       await loadClients()
       resetForm()
+      alert('✅ Cliente guardado en modo demo')
     } else {
-      setError(result.error)
+      let result
+
+      if (editingId) {
+        result = await updateClient(editingId, clientData)
+      } else {
+        result = await createClient(clientData)
+      }
+
+      if (result.ok) {
+        await loadClients()
+        resetForm()
+      } else {
+        setError(result.error)
+      }
     }
   }
 
@@ -80,6 +119,7 @@ export default function ClientsPage() {
       email: client.email || '',
       phone: client.phone || '',
       address: client.address || '',
+      tax_id: client.tax_id || '',
     })
     setEditingId(client.id)
     setShowForm(true)
@@ -98,7 +138,8 @@ export default function ClientsPage() {
   }
 
   const filteredClients = clients.filter(c =>
-    c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.name?.toLowerCase().includes(searchTerm.toLowerCase())  ||
+    c.tax_id?.toLowerCase().includes(searchTerm.toLowerCase())||
     c.email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -167,6 +208,18 @@ export default function ClientsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="form-group">
+                <label>Cédula / RUC *</label>
+                <input
+                  type="text"
+                  name="tax_id"
+                  value={formData.tax_id}
+                  onChange={handleInputChange}
+                  placeholder="Ej: 1234567890"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
                 <label>Correo Electrónico</label>
                 <input
                   type="email"
@@ -176,7 +229,9 @@ export default function ClientsPage() {
                   placeholder="contacto@empresa.com"
                 />
               </div>
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="form-group">
                 <label>Teléfono de Contacto</label>
                 <input
@@ -187,17 +242,17 @@ export default function ClientsPage() {
                   placeholder="+54 11 4455-6677"
                 />
               </div>
-            </div>
 
-            <div className="form-group">
-              <label>Dirección Fiscal / Entrega</label>
-              <textarea 
-                name="address" 
-                value={formData.address} 
-                onChange={handleInputChange}
-                placeholder="Av. Corrientes 1234, CABA..."
-                rows="2"
-              />
+              <div className="form-group">
+                <label>Dirección Fiscal / Entrega</label>
+                <textarea 
+                  name="address" 
+                  value={formData.address} 
+                  onChange={handleInputChange}
+                  placeholder="Av. Corrientes 1234, CABA..."
+                  rows="2"
+                />
+              </div>
             </div>
 
             <div className="flex gap-3 justify-end mt-2">
@@ -218,7 +273,7 @@ export default function ClientsPage() {
         <span className="material-symbols-outlined text-[var(--text-tertiary)]">search</span>
         <input 
           type="text" 
-          placeholder="Buscar cliente por nombre o correo electrónico..."
+          placeholder="Buscar cliente por nombre, RUC/Cédula o correo electrónico..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full bg-transparent border-none outline-none text-[var(--text-primary)]"
@@ -242,6 +297,7 @@ export default function ClientsPage() {
               <thead>
                 <tr>
                   <th>Cliente</th>
+                  <th>Cédula / RUC</th>
                   <th>Correo</th>
                   <th>Teléfono</th>
                   <th>Dirección</th>
@@ -258,6 +314,9 @@ export default function ClientsPage() {
                         </div>
                         <span className="font-semibold">{client.name}</span>
                       </div>
+                    </td>
+                    <td className="text-[var(--text-secondary)] font-mono text-sm">
+                      {client.tax_id || '-'}
                     </td>
                     <td className="text-[var(--text-secondary)]">
                       {client.email ? (

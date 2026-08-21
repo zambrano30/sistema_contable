@@ -1,0 +1,43 @@
+-- =====================================================
+-- Setup para Avatar Storage en Supabase
+-- =====================================================
+
+-- 1. Agregar columna avatar_url a tabla users si no existe
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+
+-- =====================================================
+-- INSTRUCCIONES MANUALES (ejecutar en Supabase Console)
+-- =====================================================
+-- 
+-- Los buckets NO se pueden crear con SQL directo.
+-- Debes crear el bucket 'avatars' manualmente:
+--
+-- 1. Ve a Supabase Dashboard → Storage
+-- 2. Haz click en "New bucket"
+-- 3. Nombre: avatars
+-- 4. Desactiva "Make it private" (hazlo público)
+-- 5. Click en "Create bucket"
+--
+-- POLÍTICAS RECOMENDADAS EN SUPABASE CONSOLE:
+--
+-- Policy 1 - SELECT (Lectura pública):
+--   - Target roles: anon, authenticated
+--   - Permissions: SELECT
+--   - Expression: (bucket_id = 'avatars')
+--
+-- Policy 2 - INSERT (Subida de propios avatares):
+--   - Target roles: authenticated
+--   - Permissions: INSERT
+--   - Expression: (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text)
+--
+-- Policy 3 - UPDATE (Actualizar propios avatares):
+--   - Target roles: authenticated
+--   - Permissions: UPDATE
+--   - Expression: (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text)
+--
+-- Policy 4 - DELETE (Eliminar propios avatares):
+--   - Target roles: authenticated
+--   - Permissions: DELETE
+--   - Expression: (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text)
+-- 
+-- =====================================================

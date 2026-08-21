@@ -2,9 +2,14 @@ import { useEffect, useState } from 'react'
 import { getAllProducts } from '../services/productsService'
 import { getAllClients } from '../services/clientsService'
 import { createInvoice, getAllInvoices, updateInvoiceStatus } from '../services/invoicesService'
+import { createCommand } from '../services/commandsService'
 import { generateInvoicePDF } from '../services/invoicePdfService'
+import { useAuth } from '../contexts/AuthContext'
+import { playNotificationSound } from '../services/notificationService'
 
 export default function SalesPage() {
+  const { user } = useAuth()
+  const isDemo = !!localStorage.getItem('demo_user')
   const [products, setProducts] = useState([])
   const [clients, setClients] = useState([])
   const [invoices, setInvoices] = useState([])
@@ -35,15 +40,26 @@ export default function SalesPage() {
 
   const loadData = async () => {
     setLoading(true)
-    const [productsRes, clientsRes, invoicesRes] = await Promise.all([
-      getAllProducts(),
-      getAllClients(),
-      getAllInvoices(),
-    ])
+    
+    if (isDemo) {
+      const demoProducts = JSON.parse(localStorage.getItem('demo_products') || '[]')
+      const demoClients = JSON.parse(localStorage.getItem('demo_clients') || '[]')
+      const demoInvoices = JSON.parse(localStorage.getItem('demo_invoices') || '[]')
+      
+      setProducts(demoProducts)
+      setClients(demoClients)
+      setInvoices(demoInvoices)
+    } else {
+      const [productsRes, clientsRes, invoicesRes] = await Promise.all([
+        getAllProducts(),
+        getAllClients(),
+        getAllInvoices(),
+      ])
 
-    if (productsRes.ok) setProducts(productsRes.data)
-    if (clientsRes.ok) setClients(clientsRes.data)
-    if (invoicesRes.ok) setInvoices(invoicesRes.data)
+      if (productsRes.ok) setProducts(productsRes.data)
+      if (clientsRes.ok) setClients(clientsRes.data)
+      if (invoicesRes.ok) setInvoices(invoicesRes.data)
+    }
 
     setLoading(false)
   }
@@ -136,13 +152,82 @@ export default function SalesPage() {
       items: useSimpleInvoice ? [] : invoiceItems,
     }
 
-    const result = await createInvoice(invoiceData)
-
-    if (result.ok) {
+    if (isDemo) {
+      // Guardar factura en localStorage
+      const demoInvoices = JSON.parse(localStorage.getItem('demo_invoices') || '[]')
+      const newInvoice = {
+        id: Date.now(),
+        invoice_number: `INV-DEMO-${Date.now()}`,
+        ...invoiceData
+      }
+      demoInvoices.push(newInvoice)
+      localStorage.setItem('demo_invoices', JSON.stringify(demoInvoices))
+      
+      // Registrar automáticamente como ingreso en demo_payments
+      const demoPayments = JSON.parse(localStorage.getItem('demo_payments') || '[]')
+      const incomeRecord = {
+        id: Date.now(),
+        invoice_id: newInvoice.id,
+        payment_date: new Date().toISOString(),
+        payment_method: 'factura',
+        amount: total,
+        reference_number: newInvoice.invoice_number,
+        notes: 'Ingreso por factura generada'
+      }
+      demoPayments.push(incomeRecord)
+      localStorage.setItem('demo_payments', JSON.stringify(demoPayments))
+      
+      // Crear comanda para la cocina
+      const demoCommands = JSON.parse(localStorage.getItem('demo_commands') || '[]')
+      const command = {
+        id: Date.now(),
+        invoice_id: newInvoice.id,
+        invoice_number: newInvoice.invoice_number,
+        status: 'pending',
+        items: invoiceItems,
+        notes: notes || '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      demoCommands.push(command)
+      localStorage.setItem('demo_commands', JSON.stringify(demoCommands))
+      
+      // Reproducir sonido de notificación
+      playNotificationSound()
+      
       await loadData()
       resetForm()
+      alert(`✅ Factura creada y registrada como ingreso en modo demo\nFactura: ${newInvoice.invoice_number}\nMonto: $${total.toFixed(2)}\n\n🍳 Comanda enviada a la cocina`)
     } else {
-      setError(result.error)
+      const result = await createInvoice(invoiceData)
+
+      if (result.ok) {
+        const newInvoice = result.data
+        
+        // Crear comanda en Supabase automáticamente
+        const commandData = {
+          invoice_id: newInvoice.id,
+          invoice_number: newInvoice.invoice_number,
+          status: 'pending',
+          items: invoiceItems,
+          notes: notes || '',
+        }
+        
+        const commandResult = await createCommand(commandData)
+        
+        if (commandResult.ok) {
+          playNotificationSound()
+          await loadData()
+          resetForm()
+          alert(`✅ Factura creada exitosamente\nFactura: ${newInvoice.invoice_number}\nMonto: $${total.toFixed(2)}\n\n🍳 Comanda enviada a la cocina`)
+        } else {
+          setError(`Factura creada pero error en comanda: ${commandResult.error}`)
+          await loadData()
+          resetForm()
+        }
+      } else {
+        setError(result.error)
+      }
     }
   }
 

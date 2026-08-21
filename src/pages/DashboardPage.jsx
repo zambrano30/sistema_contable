@@ -92,16 +92,8 @@ export default function DashboardPage() {
     <div className="page-container">
       {/* Page Header */}
       <header className="page-header">
-        <div>
-          <span className="text-[0.75rem] font-bold text-[var(--accent-orange-light)] uppercase tracking-wider">
-            Lumina Ledger • Dashboard
-          </span>
-          <h1 className="mt-1">
-            <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">space_dashboard</span>
-            <span>Panel Principal</span>
-          </h1>
-          <p className="page-subtitle">Bienvenido de nuevo, {user?.email}</p>
-        </div>
+        
+       
       </header>
 
       {/* Hero / Quick Stats Bento Grid */}

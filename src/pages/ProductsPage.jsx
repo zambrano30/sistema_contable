@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
 import { getAllProducts, createProduct, updateProduct, deleteProduct } from '../services/productsService'
 import { BarcodeScanner } from '../components/BarcodeScanner'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function ProductsPage() {
+  const { user } = useAuth()
+  const isDemo = !!localStorage.getItem('demo_user')
+  
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -29,12 +33,17 @@ export default function ProductsPage() {
 
   const loadProducts = async () => {
     setLoading(true)
-    const result = await getAllProducts()
-
-    if (result.ok) {
-      setProducts(result.data || [])
+    
+    if (isDemo) {
+      const demoProducts = JSON.parse(localStorage.getItem('demo_products') || '[]')
+      setProducts(demoProducts)
     } else {
-      setError(result.error)
+      const result = await getAllProducts()
+      if (result.ok) {
+        setProducts(result.data || [])
+      } else {
+        setError(result.error)
+      }
     }
 
     setLoading(false)
@@ -95,19 +104,41 @@ export default function ProductsPage() {
       tax_percentage: parseFloat(formData.tax_percentage) || 19,
     }
 
-    let result
-
-    if (editingId) {
-      result = await updateProduct(editingId, productData)
-    } else {
-      result = await createProduct(productData)
-    }
-
-    if (result.ok) {
+    if (isDemo) {
+      const demoProducts = JSON.parse(localStorage.getItem('demo_products') || '[]')
+      
+      if (editingId) {
+        const index = demoProducts.findIndex(p => p.id === editingId)
+        if (index >= 0) {
+          demoProducts[index] = { ...demoProducts[index], ...productData }
+        }
+      } else {
+        const newProduct = {
+          id: Date.now(),
+          ...productData
+        }
+        demoProducts.push(newProduct)
+      }
+      
+      localStorage.setItem('demo_products', JSON.stringify(demoProducts))
       await loadProducts()
       resetForm()
+      alert('✅ Producto guardado en modo demo')
     } else {
-      setError(result.error)
+      let result
+
+      if (editingId) {
+        result = await updateProduct(editingId, productData)
+      } else {
+        result = await createProduct(productData)
+      }
+
+      if (result.ok) {
+        await loadProducts()
+        resetForm()
+      } else {
+        setError(result.error)
+      }
     }
   }
 
