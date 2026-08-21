@@ -64,7 +64,7 @@ export async function createPayment(paymentData) {
           notes: paymentData.notes || '',
         }
       ])
-      .select()
+      .select('*')
 
     if (error) {
       // Create operation failed

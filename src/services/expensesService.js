@@ -161,7 +161,7 @@ export async function createExpense(expenseData) {
           is_active: true,
         }
       ])
-      .select()
+      .select('*')
 
     if (error) {
       // Create operation failed

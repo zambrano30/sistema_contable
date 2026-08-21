@@ -85,7 +85,7 @@ export async function createClient(client) {
       is_active: true,
     }
 
-    const { data, error } = await supabase.from('clients').insert([clientData]).select()
+    const { data, error } = await supabase.from('clients').insert([clientData]).select('*')
 
     if (error) {
       // Database insert failed - log details for debugging

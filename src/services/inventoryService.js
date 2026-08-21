@@ -76,7 +76,7 @@ export async function createInventoryMovement(movementData) {
           notes: movementData.notes || '',
         }
       ])
-      .select()
+      .select('*')
 
     if (movementError) {
       // Create operation failed

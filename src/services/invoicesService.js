@@ -250,7 +250,7 @@ export async function createInvoice(invoiceData) {
           notes: invoice.notes || '',
         }
       ])
-      .select()
+      .select('*')
 
     if (invoiceError) {
       // Create operation failed
@@ -307,7 +307,7 @@ export async function updateInvoice(id, updates) {
     .from('invoices')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .select()
+    .select('*')
 
   if (error) {
     return { ok: false, error: error.message }

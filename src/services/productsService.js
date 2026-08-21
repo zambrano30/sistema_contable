@@ -109,7 +109,7 @@ export async function createProduct(product) {
     const { data, error } = await supabase
       .from('products')
       .insert([productData])
-      .select()
+      .select('*')
 
     if (error) {
       // Create operation failed
