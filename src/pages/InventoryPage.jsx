@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getAllInventoryMovements, createInventoryMovement, getLowStockProducts, getInventorySummary } from '../services/inventoryService'
 import { getAllProducts, createProduct, updateProduct, deleteProduct } from '../services/productsService'
+import { BarcodeScanner } from '../components/BarcodeScanner'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function InventoryPage() {
@@ -30,6 +31,7 @@ export default function InventoryPage() {
   const [editingProductId, setEditingProductId] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [validationError, setValidationError] = useState('')
+  const [showScanner, setShowScanner] = useState(false)
   const [productFormData, setProductFormData] = useState({
     name: '',
     description: '',
@@ -261,6 +263,21 @@ export default function InventoryPage() {
     setShowProductForm(false)
   }
 
+  const handleBarcodeScanned = (barcode) => {
+    if (showProductForm) {
+      setProductFormData(prev => ({ ...prev, sku: barcode }))
+    } else {
+      const product = products.find(p => p.barcode === barcode || p.sku === barcode)
+      if (product) {
+        setSelectedProduct(product.id.toString())
+        setError('')
+      } else {
+        setError(`Código de barras "${barcode}" no encontrado`)
+      }
+    }
+    setShowScanner(false)
+  }
+
   const getMovementIcon = (type) => {
     switch (type) {
       case 'IN': return 'add_circle'
@@ -282,7 +299,7 @@ export default function InventoryPage() {
   }
 
   const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (p.sku && p.sku.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
@@ -422,19 +439,32 @@ export default function InventoryPage() {
                       name="name"
                       value={productFormData.name}
                       onChange={handleInputChange}
+                      placeholder="Ej: Impresora Térmica POS"
                       required
                     />
                   </div>
 
                   <div className="form-group">
                     <label>Código SKU / Barcode</label>
-                    <input
-                      type="text"
-                      name="sku"
-                      value={productFormData.sku}
-                      onChange={handleInputChange}
-                      className="font-mono"
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        name="sku"
+                        value={productFormData.sku}
+                        onChange={handleInputChange}
+                        placeholder="779000112233"
+                        className="flex-1 font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowScanner(true)}
+                        className="btn-secondary px-3 flex items-center justify-center gap-1"
+                        title="Escanear código de barras con la cámara del celular"
+                      >
+                        <span className="material-symbols-outlined text-lg text-[var(--accent-orange)]">qr_code_scanner</span>
+                        <span className="text-xs font-bold whitespace-nowrap">Cámara</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="form-group">
@@ -504,7 +534,7 @@ export default function InventoryPage() {
                 {filteredProducts.map((product) => (
                   <tr key={product.id}>
                     <td className="font-bold text-white">{product.name}</td>
-                    <td className="sku-cell">{product.sku || 'N/A'}</td>
+                    <td className="sku-cell">{product.sku || 'SKU-000'}</td>
                     <td className="text-right font-mono font-bold text-[var(--accent-orange-light)]">
                       ${product.price?.toFixed(2) || '0.00'}
                     </td>
@@ -550,17 +580,28 @@ export default function InventoryPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="form-group">
                     <label>Producto</label>
-                    <select
-                      value={selectedProduct}
-                      onChange={(e) => setSelectedProduct(e.target.value)}
-                    >
-                      <option value="">-- Selecciona --</option>
-                      {products.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} (Stock: {p.quantity || 0})
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        value={selectedProduct}
+                        onChange={(e) => setSelectedProduct(e.target.value)}
+                        className="flex-1"
+                      >
+                        <option value="">-- Selecciona --</option>
+                        {products.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} (Stock: {p.quantity || 0})
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setShowScanner(true)}
+                        className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition flex items-center gap-2"
+                        title="Escanear código de barras"
+                      >
+                        <span className="material-symbols-outlined">qr_code_scanner</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="form-group">
@@ -657,6 +698,14 @@ export default function InventoryPage() {
             </table>
           </div>
         </>
+      )}
+
+      {/* Barcode Scanner Modal */}
+      {showScanner && (
+        <BarcodeScanner
+          onScan={handleBarcodeScanned}
+          onClose={() => setShowScanner(false)}
+        />
       )}
     </div>
   )

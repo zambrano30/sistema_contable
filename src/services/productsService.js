@@ -102,7 +102,7 @@ export async function createProduct(product) {
       quantity_on_hand: parseInt(product.quantity) || 0,
       minimum_quantity: parseInt(product.minimum_quantity) || 10,
       is_taxable: product.is_taxable !== false, // Default to true
-      tax_percentage: parseFloat(product.tax_percentage) || 19,
+      tax_percentage: parseFloat(product.tax_percentage) || 15,
       is_active: true,
     }
 
@@ -149,7 +149,7 @@ export async function updateProduct(id, updates) {
       quantity_on_hand: parseInt(updates.quantity) || 0,
       minimum_quantity: parseInt(updates.minimum_quantity) || 10,
       is_taxable: updates.is_taxable !== false,
-      tax_percentage: parseFloat(updates.tax_percentage) || 19,
+      tax_percentage: parseFloat(updates.tax_percentage) || 15,
       updated_at: new Date().toISOString(),
     }
 

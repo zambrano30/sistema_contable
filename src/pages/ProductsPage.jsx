@@ -72,7 +72,7 @@ export default function ProductsPage() {
   }
 
   const handleBarcodeScanned = (barcode) => {
-    setFormData({ ...formData, sku: barcode })
+    setFormData(prev => ({ ...prev, sku: barcode }))
     setShowScanner(false)
   }
 
@@ -284,10 +284,11 @@ export default function ProductsPage() {
                     <button
                       type="button"
                       onClick={() => setShowScanner(true)}
-                      className="btn-secondary px-3"
-                      title="Escanear con cámara"
+                      className="btn-secondary px-3 flex items-center justify-center gap-1"
+                      title="Escanear código de barras con la cámara del celular"
                     >
-                      <span className="material-symbols-outlined">qr_code_scanner</span>
+                      <span className="material-symbols-outlined text-lg text-[var(--accent-orange)]">qr_code_scanner</span>
+                      <span className="text-xs font-bold whitespace-nowrap">Cámara</span>
                     </button>
                   </div>
                 </div>

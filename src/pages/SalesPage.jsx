@@ -3,6 +3,7 @@ import { getAllProducts } from '../services/productsService'
 import { getAllClients, createClient } from '../services/clientsService'
 import { createInvoice, getAllInvoices, deleteInvoice } from '../services/invoicesService'
 import { generateInvoicePDF } from '../services/invoicePdfService'
+import { BarcodeScanner } from '../components/BarcodeScanner'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function SalesPage() {
@@ -51,6 +52,9 @@ export default function SalesPage() {
   const [clientModalSearchQuery, setClientModalSearchQuery] = useState('')
   const [clientModalPage, setClientModalPage] = useState(1)
   const clientModalPageSize = 20
+
+  // Barcode Scanner
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false)
   
   const barcodeInputRef = useRef(null)
 
@@ -181,6 +185,19 @@ export default function SalesPage() {
     }
 
     setItemProduct('')
+  }
+
+  const handleBarcodeScanned = (barcode) => {
+    // Buscar producto por código de barras
+    const product = products.find(p => p.barcode === barcode)
+    if (product) {
+      handleProductSelect({ target: { value: product.id.toString() } })
+    } else {
+      setError(`Código de barras "${barcode}" no encontrado`)
+    }
+    setShowBarcodeScanner(false)
+    // Enfocar el input de código de barras después de cerrar el scanner
+    setTimeout(() => barcodeInputRef.current?.focus(), 100)
   }
 
   const updateInvoiceItemQuantity = (index, newQuantity) => {
@@ -558,7 +575,15 @@ export default function SalesPage() {
                   </div>
                 </div>
                 
-                <div className="flex items-end">
+                <div className="flex items-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowBarcodeScanner(true)}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition flex items-center gap-2 h-12"
+                    title="Escanear código con cámara o lector"
+                  >
+                    <span className="material-symbols-outlined">qr_code_scanner</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => setShowProductCatalog(true)}
@@ -1035,6 +1060,14 @@ export default function SalesPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Barcode Scanner Modal */}
+      {showBarcodeScanner && (
+        <BarcodeScanner
+          onScan={handleBarcodeScanned}
+          onClose={() => setShowBarcodeScanner(false)}
+        />
       )}
     </div>
   )
