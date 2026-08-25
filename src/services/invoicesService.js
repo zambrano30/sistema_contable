@@ -12,7 +12,7 @@ export async function getAllInvoices(filters = {}) {
   try {
     let query = supabase
       .from('invoices')
-      .select('*')
+      .select('*, invoice_items(*, products(*))')
       .order('created_at', { ascending: false })
 
     if (filters.status) {
@@ -242,6 +242,9 @@ export async function createInvoice(invoiceData) {
           tax_amount: invoice.tax_amount || 0,
           discount_amount: invoice.discount_amount || 0,
           total_amount: invoice.total_amount || 0,
+          payment_method: invoice.payment_method || 'cash',
+          cash_amount: invoice.payment_method === 'transfer' ? 0 : invoice.total_amount || 0,
+          transfer_amount: invoice.payment_method === 'transfer' ? invoice.total_amount || 0 : 0,
           notes: invoice.notes || '',
         }
       ])

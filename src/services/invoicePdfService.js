@@ -10,6 +10,12 @@ import html2pdf from 'html2pdf.js'
  */
 export function generateInvoicePDF(invoice, items, client, company = {}) {
   try {
+    const companyData = {
+      name: 'Pasteles Don Chris',
+      ruc: '0940805997011',
+      address: 'Quevedo, Los Ríos, Ecuador',
+      ...company,
+    }
     // Format numbers
     const formatCurrency = (num) => {
       return new Intl.NumberFormat('es-EC', {
@@ -42,32 +48,36 @@ export function generateInvoicePDF(invoice, items, client, company = {}) {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            color: #000000 !important;
           }
           body {
             font-family: 'Courier New', monospace;
-            font-size: 13px;
-            color: #000000;
-            background: #ffffff;
+            width: 80mm;
+            font-size: 10px;
+            color: #000000 !important;
+            background: #ffffff !important;
             line-height: 1.5;
           }
           .container {
-            width: 210mm;
-            height: 297mm;
-            padding: 15mm;
-            background: #ffffff;
+            width: 80mm;
+            min-height: 120mm;
+            padding: 4mm;
+            color: #000000 !important;
+            background: #ffffff !important;
           }
           .header {
-            border-bottom: 3px solid #000000;
-            padding-bottom: 10mm;
-            margin-bottom: 10mm;
+            border-bottom: none;
+            padding-bottom: 4mm;
+            margin-bottom: 4mm;
           }
           .header-top {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: flex-start;
+            gap: 3mm;
           }
           .company-info h1 {
-            font-size: 24px;
+            font-size: 16px;
             font-weight: bold;
             color: #000000;
             margin-bottom: 3px;
@@ -79,16 +89,17 @@ export function generateInvoicePDF(invoice, items, client, company = {}) {
             font-weight: normal;
           }
           .invoice-title {
-            text-align: right;
+            width: 100%;
+            text-align: left;
           }
           .invoice-title .title {
-            font-size: 20px;
+            font-size: 15px;
             font-weight: bold;
             color: #000000;
             margin-bottom: 5px;
           }
           .invoice-title .number {
-            font-size: 18px;
+            font-size: 12px;
             font-weight: bold;
             color: #000000;
           }
@@ -98,20 +109,20 @@ export function generateInvoicePDF(invoice, items, client, company = {}) {
             margin-top: 5px;
           }
           .section {
-            margin: 12mm 0;
+            margin: 5mm 0;
           }
           .section-title {
             font-size: 13px;
             font-weight: bold;
             color: #000000;
-            border-bottom: 2px solid #000000;
+            border-bottom: none;
             padding-bottom: 3px;
             margin-bottom: 6px;
           }
           .two-column {
             display: flex;
-            justify-content: space-between;
-            gap: 20px;
+            flex-direction: column;
+            gap: 3mm;
           }
           .column {
             flex: 1;
@@ -124,8 +135,8 @@ export function generateInvoicePDF(invoice, items, client, company = {}) {
           .label {
             font-weight: bold;
             color: #000000;
-            width: 120px;
-            min-width: 120px;
+            width: 85px;
+            min-width: 85px;
           }
           .value {
             color: #000000;
@@ -135,28 +146,28 @@ export function generateInvoicePDF(invoice, items, client, company = {}) {
           table {
             width: 100%;
             border-collapse: collapse;
-            margin: 10mm 0;
-            font-size: 12px;
+            margin: 5mm 0;
+            font-size: 9px;
           }
           table thead {
             background: #e0e0e0;
-            border-top: 2px solid #000000;
-            border-bottom: 2px solid #000000;
+            border: none;
           }
           table th {
             padding: 6px;
             text-align: left;
             font-weight: bold;
             color: #000000;
-            border: 1px solid #000000;
+            border: none;
           }
           table td {
             padding: 6px;
-            border: 1px solid #cccccc;
+            border: none;
             color: #000000;
           }
           table tbody tr:nth-child(even) {
-            background: #f9f9f9;
+            color: #000000 !important;
+            background: transparent !important;
           }
           .text-right {
             text-align: right;
@@ -165,7 +176,7 @@ export function generateInvoicePDF(invoice, items, client, company = {}) {
             text-align: center;
           }
           .totals {
-            margin: 15mm 0;
+            margin: 5mm 0;
             display: flex;
             justify-content: flex-end;
           }
@@ -178,7 +189,7 @@ export function generateInvoicePDF(invoice, items, client, company = {}) {
             padding: 6px 0;
             font-size: 12px;
             color: #000000;
-            border-bottom: 1px solid #cccccc;
+            border-bottom: none;
           }
           .total-row.subtotal {
             font-weight: normal;
@@ -189,10 +200,9 @@ export function generateInvoicePDF(invoice, items, client, company = {}) {
           .total-row.grand-total {
             font-weight: bold;
             font-size: 14px;
-            border-top: 2px solid #000000;
-            border-bottom: 2px solid #000000;
+            border: none;
             padding: 8px 0;
-            background: #f0f0f0;
+            background: transparent;
           }
           .total-label {
             font-weight: normal;
@@ -212,15 +222,15 @@ export function generateInvoicePDF(invoice, items, client, company = {}) {
             font-weight: bold;
           }
           .footer {
-            margin-top: 20mm;
-            border-top: 1px solid #cccccc;
+            margin-top: 8mm;
+            border-top: none;
             padding-top: 5mm;
             font-size: 11px;
             text-align: center;
             color: #000000;
           }
           .authorization-box {
-            border: 2px solid #000000;
+            border: none;
             padding: 8px;
             margin: 10mm 0;
             text-align: center;
@@ -235,11 +245,11 @@ export function generateInvoicePDF(invoice, items, client, company = {}) {
           <div class="header">
             <div class="header-top">
               <div class="company-info">
-                <h1>${company.name || 'MI EMPRESA'}</h1>
-                <p><span class="label">RUC:</span> ${company.ruc || '___________________'}</p>
-                <p><span class="label">Dirección:</span> ${company.address || '___________________'}</p>
-                <p><span class="label">Teléfono:</span> ${company.phone || '___________________'}</p>
-                <p><span class="label">Email:</span> ${company.email || '___________________'}</p>
+                <h1>${companyData.name || 'MI EMPRESA'}</h1>
+                <p><span class="label">RUC:</span> ${companyData.ruc || '___________________'}</p>
+                <p><span class="label">Dirección:</span> ${companyData.address || '___________________'}</p>
+                <p><span class="label">Teléfono:</span> ${companyData.phone || '___________________'}</p>
+                <p><span class="label">Email:</span> ${companyData.email || '___________________'}</p>
               </div>
               <div class="invoice-title">
                 <div class="title">FACTURA</div>
@@ -343,7 +353,7 @@ export function generateInvoicePDF(invoice, items, client, company = {}) {
           <!-- SECCIÓN SRI -->
           <div class="authorization-box">
             <div style="font-weight: bold; margin-bottom: 5px;">NÚMERO DE AUTORIZACIÓN SRI</div>
-            <div style="border-bottom: 1px solid #000000; height: 20px;"></div>
+            <div style="height: 8px;"></div>
             <div style="font-size: 10px; margin-top: 5px; color: #666666;">Se completará cuando obtenga autorización del SRI</div>
           </div>
 
@@ -360,7 +370,7 @@ export function generateInvoicePDF(invoice, items, client, company = {}) {
 
     // PDF Options
     const options = {
-      margin: [10, 10, 10, 10],
+      margin: [0, 0, 0, 0],
       filename: `Factura-${invoice.invoice_number || 'XXXXXX'}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
@@ -372,13 +382,29 @@ export function generateInvoicePDF(invoice, items, client, company = {}) {
       jsPDF: { 
         orientation: 'portrait', 
         unit: 'mm', 
-        format: 'a4',
+        format: [80, 220],
         compress: false
       }
     }
 
-    // Generate and download PDF
-    html2pdf().set(options).from(htmlContent).save()
+    // Render from an isolated DOM node so the application theme cannot override the invoice.
+    const renderRoot = document.createElement('div')
+    renderRoot.innerHTML = htmlContent
+    renderRoot.style.position = 'fixed'
+    renderRoot.style.left = '-10000px'
+    renderRoot.style.top = '0'
+    renderRoot.style.width = '80mm'
+    renderRoot.style.backgroundColor = '#ffffff'
+    renderRoot.style.color = '#000000'
+    document.body.appendChild(renderRoot)
+
+    const invoiceElement = renderRoot.querySelector('.container')
+    html2pdf().set(options).from(invoiceElement).save().then(() => {
+      renderRoot.remove()
+    }).catch((error) => {
+      renderRoot.remove()
+      console.error('Error generating invoice PDF:', error)
+    })
   } catch (error) {
     console.error('Error generating invoice PDF:', error)
     throw error

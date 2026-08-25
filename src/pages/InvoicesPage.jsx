@@ -43,17 +43,24 @@ export default function InvoicesPage() {
     const client = clients.find(clientItem => clientItem.id === invoice.client_id) || {
       name: 'Consumidor Final',
     }
-    const mockItems = [{
+    const invoiceItems = invoice.invoice_items || []
+    const items = invoiceItems.length > 0 ? invoiceItems.map((item) => ({
+      product_id: item.product_id,
+      description: item.description || item.products?.name || 'Producto',
+      quantity: Number(item.quantity || 0),
+      unit_price: Number(item.unit_price || 0),
+    })) : [{
       product_id: 1,
-      description: `Factura #${invoice.invoice_number}`,
+      description: 'Consumo general',
       quantity: 1,
       unit_price: invoice.total_amount || 0,
     }]
 
     try {
-      generateInvoicePDF(invoice, mockItems, client, {
-        name: 'FacturaPro S.A.',
-        ruc: '1792000000001',
+      generateInvoicePDF(invoice, items, client, {
+        name: 'Pasteles Don Chris',
+        ruc: '0940805997011',
+        address: 'Quevedo, Los Ríos, Ecuador',
       })
     } catch (err) {
       console.error('Error generating PDF:', err)
