@@ -249,3 +249,9 @@ Ahora:  95% Completo ✅
 **Estado:** ✅ 95% Operacional
 **Bloqueante:** ⚠️ Ejecutar SQL en Supabase
 **Tiempo de Configuración:** ~5 minutos
+
+---
+
+## PRUEBA DE MERGE
+
+Este cambio se agrego en la rama `probar-conexion-git` para validar el flujo de integracion con Git.
