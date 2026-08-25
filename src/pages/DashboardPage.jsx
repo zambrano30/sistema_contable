@@ -1,26 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getTotalSales, getMonthlySalesData, getInvoiceStats, getAllInvoices } from '../services/invoicesService'
+import { getTotalSales, getInvoiceStats, getAllInvoices } from '../services/invoicesService'
 import { getAllClients } from '../services/clientsService'
 import { getAllExpenses } from '../services/expensesService'
 
 export default function DashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const isDemo = !!localStorage.getItem('demo_user')
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
     totalSales: 0,
     monthlyGrowth: 0,
     invoiceCount: 0,
     clientCount: 0,
-    paidPercentage: 0,
     recentActivity: [],
     totalExpenses: 0,
     balance: 0,
   })
-  const [chartData, setChartData] = useState([])
-
   useEffect(() => {
     loadDashboardData()
   }, [])
@@ -29,11 +27,38 @@ export default function DashboardPage() {
     try {
       setLoading(true)
 
-      const salesResult = await getTotalSales('month')
-      const invoiceStatsResult = await getInvoiceStats()
-      const clientsResult = await getAllClients()
-      const chartResult = await getMonthlySalesData(6)
-      const recentInvoicesResult = await getAllInvoices()
+      let salesResult
+      let invoiceStatsResult
+      let clientsResult
+      let recentInvoicesResult
+
+      if (isDemo) {
+        const demoInvoices = JSON.parse(localStorage.getItem('demo_invoices') || '[]')
+        const demoClients = JSON.parse(localStorage.getItem('demo_clients') || '[]')
+        const demoSales = calculateDemoSales(demoInvoices)
+        const statuses = demoInvoices.reduce((counts, invoice) => {
+          counts[invoice.status] = (counts[invoice.status] || 0) + 1
+          return counts
+        }, {})
+
+        salesResult = { ok: true, data: demoSales.current }
+        invoiceStatsResult = {
+          ok: true,
+          data: {
+            total: demoInvoices.length,
+            draft: statuses.draft || 0,
+            sent: statuses.sent || 0,
+            cancelled: statuses.cancelled || 0,
+          },
+        }
+        clientsResult = { ok: true, data: demoClients }
+        recentInvoicesResult = { ok: true, data: demoInvoices }
+      } else {
+        salesResult = await getTotalSales('month')
+        invoiceStatsResult = await getInvoiceStats()
+        clientsResult = await getAllClients()
+        recentInvoicesResult = await getAllInvoices()
+      }
 
       const expensesResult = await getAllExpenses()
       const totalExpenses = expensesResult.ok 
@@ -41,9 +66,6 @@ export default function DashboardPage() {
         : 0
 
       if (salesResult.ok && invoiceStatsResult.ok && clientsResult.ok) {
-        const paidCount = invoiceStatsResult.data?.paid || 0
-        const totalInvoices = invoiceStatsResult.data?.total || 1
-        const paidPercentage = (paidCount / totalInvoices) * 100
         const totalSales = salesResult.data?.total || 0
         const balance = totalSales - totalExpenses
 
@@ -52,16 +74,12 @@ export default function DashboardPage() {
           monthlyGrowth: salesResult.data?.monthlyGrowth || 0,
           invoiceCount: invoiceStatsResult.data?.total || 0,
           clientCount: clientsResult.data?.length || 0,
-          paidPercentage,
           recentActivity: recentInvoicesResult.data?.slice(0, 4) || [],
           totalExpenses,
           balance,
         })
       }
 
-      if (chartResult.ok) {
-        setChartData(chartResult.data || [])
-      }
     } catch (error) {
       console.error('Error loading dashboard data:', error)
     } finally {
@@ -134,17 +152,9 @@ export default function DashboardPage() {
               {loading ? '---' : stats.invoiceCount}
             </div>
           </div>
-          <div>
-            <div className="w-full bg-white/10 rounded-full h-2 mt-4 overflow-hidden">
-              <div
-                className="bg-[var(--accent-orange)] h-full rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(stats.paidPercentage, 100)}%` }}
-              ></div>
-            </div>
-            <p className="text-xs text-[var(--text-secondary)] mt-2 font-medium">
-              {loading ? '---' : `${stats.paidPercentage.toFixed(0)}% cobradas exitosamente`}
-            </p>
-          </div>
+          <p className="text-xs text-[var(--text-secondary)] mt-4 font-medium">
+            Total de facturas registradas
+          </p>
         </div>
 
         {/* Clients Count Bento Card */}
@@ -221,61 +231,12 @@ export default function DashboardPage() {
         </button>
       </section>
 
-      {/* Monthly Sales Chart & Recent Activity Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Monthly Sales Chart */}
-        <section className="card lg:col-span-2 flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-extrabold m-0 text-[var(--text-primary)]">Rendimiento de Ventas Mensuales</h3>
-              <p className="text-xs text-[var(--text-secondary)] m-0">Historial de facturación acumulada</p>
-            </div>
-            <div className="p-2 rounded-xl bg-white/5 text-[var(--accent-orange)]">
-              <span className="material-symbols-outlined">show_chart</span>
-            </div>
-          </div>
-
-          <div className="relative h-48 w-full mt-4">
-            {!loading && chartData.length > 0 && chartData.some(d => d.total > 0) ? (
-              <svg className="w-full h-full overflow-visible" viewBox="0 0 400 100" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="#ff9f0a" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#ff9f0a" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-                <path 
-                  d={generateChartPath(chartData, 100)} 
-                  fill="url(#chartGradient)"
-                ></path>
-                <path 
-                  d={generateChartPath(chartData, 100)} 
-                  fill="none" 
-                  stroke="#ff9f0a" 
-                  strokeWidth="3" 
-                  strokeLinecap="round"
-                ></path>
-              </svg>
-            ) : (
-              <div className="flex items-center justify-center h-full text-[var(--text-secondary)] text-sm">
-                {loading ? 'Cargando datos...' : 'Sin registros de ventas en el gráfico'}
-              </div>
-            )}
-          </div>
-          <div className="flex justify-between mt-4 border-t border-[var(--border-color)] pt-3 px-1">
-            {chartData.slice(-6).map((data, idx) => (
-              <span key={idx} className="text-xs text-[var(--text-tertiary)] font-bold">
-                {data.month.split('-')[1]}
-              </span>
-            ))}
-          </div>
-        </section>
-
+      <div className="grid grid-cols-1 gap-6">
         {/* Recent Activity List */}
         <section className="card flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-extrabold m-0 text-[var(--text-primary)]">Últimas Facturas</h3>
-            <button onClick={() => navigate('/sales')} className="btn-link text-xs uppercase tracking-wider font-bold">Ver todas</button>
+            <button onClick={() => navigate('/invoices')} className="btn-link text-xs uppercase tracking-wider font-bold">Ver todas</button>
           </div>
 
           <div className="flex flex-col gap-3">
@@ -305,16 +266,6 @@ export default function DashboardPage() {
                     <p className="text-sm font-bold font-mono m-0 text-[var(--text-primary)]">
                       {formatCurrency(invoice.total_amount)}
                     </p>
-                    <span className={`badge mt-1 ${
-                      invoice.status === 'paid' ? 'badge-success' : 
-                      invoice.status === 'sent' ? 'badge-info' : 
-                      invoice.status === 'draft' ? 'badge-warning' :
-                      'badge-error'
-                    }`}>
-                      {invoice.status === 'paid' ? 'Pagada' :
-                       invoice.status === 'sent' ? 'Enviada' :
-                       invoice.status === 'draft' ? 'Borrador' : 'Cancelada'}
-                    </span>
                   </div>
                 </div>
               ))
@@ -328,21 +279,33 @@ export default function DashboardPage() {
   )
 }
 
-function generateChartPath(data, height) {
-  if (data.length === 0) return ''
-  
-  const maxValue = Math.max(...data.map(d => d.total), 1)
-  const width = 400
-  const pointWidth = width / (data.length - 1 || 1)
-  
-  let path = `M0,${height - (data[0].total / maxValue) * (height - 15)}`
-  
-  for (let i = 1; i < data.length; i++) {
-    const x = i * pointWidth
-    const y = height - (data[i].total / maxValue) * (height - 15)
-    path += ` L${x},${y}`
+function calculateDemoSales(invoices) {
+  const now = new Date()
+  const startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+  const previousStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const endPreviousPeriod = new Date(startDate)
+  endPreviousPeriod.setDate(endPreviousPeriod.getDate() - 1)
+  let currentTotal = 0
+  let previousTotal = 0
+
+  invoices.forEach((invoice) => {
+    const invoiceDate = new Date(invoice.invoice_date)
+    const total = Number(invoice.total_amount) || 0
+
+    if (invoiceDate >= startDate) currentTotal += total
+    if (invoiceDate >= previousStartDate && invoiceDate <= endPreviousPeriod) previousTotal += total
+  })
+
+  const monthlyGrowth = previousTotal > 0
+    ? ((currentTotal - previousTotal) / previousTotal) * 100
+    : 0
+
+  return {
+    current: {
+      total: currentTotal,
+      count: invoices.filter((invoice) => new Date(invoice.invoice_date) >= startDate).length,
+      monthlyGrowth: parseFloat(monthlyGrowth.toFixed(1)),
+    },
   }
-  
-  path += ` L${width},${height} L0,${height} Z`
-  return path
 }
+

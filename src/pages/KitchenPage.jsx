@@ -59,29 +59,6 @@ export default function KitchenPage() {
   //   setLoading(false)
   // }
 
-  const updateCommandStatus = async (commandId, newStatus) => {
-    if (isDemo) {
-      // Actualizar en localStorage en modo demo
-      const demoCommands = JSON.parse(localStorage.getItem('demo_commands') || '[]')
-      const command = demoCommands.find(c => c.id === commandId)
-      if (command) {
-        command.status = newStatus
-        command.updated_at = new Date().toISOString()
-        localStorage.setItem('demo_commands', JSON.stringify(demoCommands))
-        loadCommands()
-      }
-    } else {
-      // Actualizar en Supabase en modo producción
-      const result = await updateCommandStatusService(commandId, newStatus)
-      
-      if (result.ok) {
-        loadCommands()
-      } else {
-        console.error('Error actualizando estado:', result.error)
-      }
-    }
-  }
-
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending':

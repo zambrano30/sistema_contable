@@ -70,7 +70,6 @@ export async function getTotalSales(period = 'month') {
     .from('invoices')
     .select('total_amount')
     .gte('invoice_date', startDate.toISOString().split('T')[0])
-    .in('status', ['sent', 'paid'])
 
   // Previous period total
   const endPreviousPeriod = new Date(startDate)
@@ -81,7 +80,6 @@ export async function getTotalSales(period = 'month') {
     .select('total_amount')
     .gte('invoice_date', previousStartDate.toISOString().split('T')[0])
     .lte('invoice_date', endPreviousPeriod.toISOString().split('T')[0])
-    .in('status', ['sent', 'paid'])
 
   if (currentError || previousError) {
     return { ok: false, error: currentError?.message || previousError?.message }
@@ -118,7 +116,6 @@ export async function getMonthlySalesData(months = 12) {
   const { data, error } = await supabase
     .from('invoices')
     .select('invoice_date, total_amount')
-    .in('status', ['sent', 'paid'])
     .order('invoice_date', { ascending: true })
 
   if (error) {
@@ -155,7 +152,7 @@ export async function getMonthlySalesData(months = 12) {
 
 /**
  * Get invoice statistics
- * @returns {Promise<{ok: boolean, data?: {total: number, draft: number, sent: number, paid: number, cancelled: number}, error?: string}>}
+ * @returns {Promise<{ok: boolean, data?: {total: number, draft: number, sent: number, cancelled: number}, error?: string}>}
  */
 export async function getInvoiceStats() {
   if (!isSupabaseConfigured || !supabase) {
@@ -175,7 +172,6 @@ export async function getInvoiceStats() {
     total: data?.length || 0,
     draft: data?.filter((inv) => inv.status === 'draft').length || 0,
     sent: data?.filter((inv) => inv.status === 'sent').length || 0,
-    paid: data?.filter((inv) => inv.status === 'paid').length || 0,
     cancelled: data?.filter((inv) => inv.status === 'cancelled').length || 0,
   }
 
@@ -242,7 +238,6 @@ export async function createInvoice(invoiceData) {
           user_id: userId,
           invoice_date: invoice.invoice_date || new Date().toISOString(),
           due_date: invoice.due_date,
-          status: 'draft',
           subtotal: invoice.subtotal || 0,
           tax_amount: invoice.tax_amount || 0,
           discount_amount: invoice.discount_amount || 0,

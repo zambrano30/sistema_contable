@@ -63,7 +63,7 @@ export default function ExpensesPage() {
     }
 
     expenseList.forEach((exp) => {
-      if (totals.hasOwnProperty(exp.category)) {
+      if (Object.prototype.hasOwnProperty.call(totals, exp.category)) {
         totals[exp.category] += exp.amount || 0
       }
     })

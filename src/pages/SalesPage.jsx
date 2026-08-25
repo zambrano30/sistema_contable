@@ -1,8 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { getAllProducts } from '../services/productsService'
-import { getAllClients, createClient } from '../services/clientsService'
-import { createInvoice, getAllInvoices, deleteInvoice } from '../services/invoicesService'
-import { generateInvoicePDF } from '../services/invoicePdfService'
+import { getAllClients } from '../services/clientsService'
+import { createInvoice } from '../services/invoicesService'
 import { BarcodeScanner } from '../components/BarcodeScanner'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -11,7 +10,6 @@ export default function SalesPage() {
   const isDemo = !!localStorage.getItem('demo_user')
   const [products, setProducts] = useState([])
   const [clients, setClients] = useState([])
-  const [invoices, setInvoices] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -32,9 +30,6 @@ export default function SalesPage() {
   const [itemProduct, setItemProduct] = useState('')
   const [itemQuantity, setItemQuantity] = useState('')
   const [itemDiscount, setItemDiscount] = useState(0)
-
-  // Selection for bulk delete
-  const [selectedInvoices, setSelectedInvoices] = useState(new Set())
 
   // Search states
   const [clientSearchQuery, setClientSearchQuery] = useState('')
@@ -95,21 +90,17 @@ export default function SalesPage() {
     if (isDemo) {
       const demoProducts = JSON.parse(localStorage.getItem('demo_products') || '[]')
       const demoClients = JSON.parse(localStorage.getItem('demo_clients') || '[]')
-      const demoInvoices = JSON.parse(localStorage.getItem('demo_invoices') || '[]')
       
       setProducts(demoProducts)
       setClients(demoClients)
-      setInvoices(demoInvoices)
     } else {
-      const [productsRes, clientsRes, invoicesRes] = await Promise.all([
+      const [productsRes, clientsRes] = await Promise.all([
         getAllProducts(),
         getAllClients(),
-        getAllInvoices(),
       ])
 
       if (productsRes.ok) setProducts(productsRes.data)
       if (clientsRes.ok) setClients(clientsRes.data)
-      if (invoicesRes.ok) setInvoices(invoicesRes.data)
     }
 
     setLoading(false)
@@ -259,7 +250,6 @@ export default function SalesPage() {
       client_id: isConsumerFinal ? null : parseInt(selectedClient),
       invoice_date: new Date().toISOString().split('T')[0],
       due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      status: 'paid',
       subtotal,
       tax_amount: 0,
       discount_amount: useSimpleInvoice ? parseFloat(simpleDiscount) : parseFloat(discountAmount),
@@ -277,19 +267,6 @@ export default function SalesPage() {
       }
       demoInvoices.push(newInvoice)
       localStorage.setItem('demo_invoices', JSON.stringify(demoInvoices))
-      
-      const demoPayments = JSON.parse(localStorage.getItem('demo_payments') || '[]')
-      const incomeRecord = {
-        id: Date.now(),
-        invoice_id: newInvoice.id,
-        payment_date: new Date().toISOString(),
-        payment_method: 'factura',
-        amount: total,
-        reference_number: newInvoice.invoice_number,
-        notes: 'Ingreso por factura generada'
-      }
-      demoPayments.push(incomeRecord)
-      localStorage.setItem('demo_payments', JSON.stringify(demoPayments))
       
       await loadData()
       resetForm()
@@ -318,98 +295,6 @@ export default function SalesPage() {
     setUseSimpleInvoice(false)
     setSimpleSubtotal(0)
     setSimpleDiscount(0)
-  }
-
-  const capitalize = (str) => {
-    if (!str) return ''
-    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
-  }
-
-  const handleDownloadPDF = async (invoice) => {
-    const client = clients.find(c => c.id === invoice.client_id) || { name: capitalize('Consumidor Final') }
-    const mockItems = [{
-      product_id: 1,
-      description: 'Factura #' + invoice.invoice_number,
-      quantity: 1,
-      unit_price: invoice.total_amount || 0
-    }]
-    
-    try {
-      generateInvoicePDF(invoice, mockItems, client, {
-        name: 'FacturaPro S.A.',
-        ruc: '1792000000001'
-      })
-    } catch (err) {
-      console.error('Error generating PDF:', err)
-      setError('Error generando PDF')
-    }
-  }
-
-  const handleDeleteInvoice = async (invoiceId) => {
-    const confirmed = window.confirm('¿Seguro que deseas eliminar esta factura? Esta acción no se puede deshacer.')
-    if (!confirmed) return
-
-    if (isDemo) {
-      const demoInvoices = JSON.parse(localStorage.getItem('demo_invoices') || '[]')
-      const filteredInvoices = demoInvoices.filter(inv => inv.id !== invoiceId)
-      localStorage.setItem('demo_invoices', JSON.stringify(filteredInvoices))
-      
-      const demoPayments = JSON.parse(localStorage.getItem('demo_payments') || '[]')
-      const filteredPayments = demoPayments.filter(pay => pay.invoice_id !== invoiceId)
-      localStorage.setItem('demo_payments', JSON.stringify(filteredPayments))
-      
-      await loadData()
-    } else {
-      const result = await deleteInvoice(invoiceId)
-      if (result.ok) {
-        await loadData()
-      } else {
-        setError(`Error al eliminar: ${result.error}`)
-      }
-    }
-  }
-
-  const toggleInvoiceSelection = (invoiceId) => {
-    const newSelected = new Set(selectedInvoices)
-    if (newSelected.has(invoiceId)) {
-      newSelected.delete(invoiceId)
-    } else {
-      newSelected.add(invoiceId)
-    }
-    setSelectedInvoices(newSelected)
-  }
-
-  const toggleSelectAll = () => {
-    if (selectedInvoices.size === invoices.length) {
-      setSelectedInvoices(new Set())
-    } else {
-      setSelectedInvoices(new Set(invoices.map(inv => inv.id)))
-    }
-  }
-
-  const handleDeleteSelectedInvoices = async () => {
-    if (selectedInvoices.size === 0) {
-      setError('Selecciona al menos una factura para eliminar')
-      return
-    }
-
-    const confirmed = window.confirm(`¿Seguro que deseas eliminar ${selectedInvoices.size} factura(s)?`)
-    if (!confirmed) return
-
-    setLoading(true)
-    for (const invoiceId of selectedInvoices) {
-      if (isDemo) {
-        const demoInvoices = JSON.parse(localStorage.getItem('demo_invoices') || '[]')
-        const filteredInvoices = demoInvoices.filter(inv => inv.id !== invoiceId)
-        localStorage.setItem('demo_invoices', JSON.stringify(filteredInvoices))
-      } else {
-        await deleteInvoice(invoiceId)
-      }
-    }
-
-    await loadData()
-    setSelectedInvoices(new Set())
-    setLoading(false)
   }
 
   const { subtotal, taxAmount, total } = calculateTotals()
@@ -967,100 +852,6 @@ export default function SalesPage() {
           </div>
         </div>
       </div>
-
-      {/* History Invoices List - Only for Admins */}
-      {user?.role !== 'Vendedor' && (
-        <div className="card mt-6">
-          <div className="flex flex-wrap items-center justify-between mb-4 pb-3 border-b border-[var(--border-color)] gap-3">
-            <h3 className="text-lg font-extrabold m-0 text-[var(--text-primary)] flex items-center gap-2">
-              <span className="material-symbols-outlined text-[var(--accent-orange)]">history</span>
-              <span>Historial de Facturas Emitidas</span>
-            </h3>
-
-            {selectedInvoices.size > 0 && (
-              <button
-                onClick={handleDeleteSelectedInvoices}
-                className="btn-danger text-xs font-bold"
-              >
-                <span className="material-symbols-outlined text-sm">delete</span>
-                <span>Eliminar ({selectedInvoices.size}) seleccionadas</span>
-              </button>
-            )}
-          </div>
-
-          {invoices.length === 0 ? (
-            <p className="text-center text-[var(--text-tertiary)] py-8">No se registraron facturas todavía</p>
-          ) : (
-            <div className="table-wrapper">
-              <table className="custom-table">
-                <thead>
-                  <tr>
-                    <th className="w-10">
-                      <input
-                        type="checkbox"
-                        checked={selectedInvoices.size === invoices.length && invoices.length > 0}
-                        onChange={toggleSelectAll}
-                        className="w-4 h-4 cursor-pointer"
-                      />
-                    </th>
-                    <th>Factura #</th>
-                    <th>Cliente</th>
-                    <th>Fecha</th>
-                    <th className="text-right">Monto Total</th>
-                    <th className="text-center">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoices.map((inv) => (
-                    <tr key={inv.id}>
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={selectedInvoices.has(inv.id)}
-                          onChange={() => toggleInvoiceSelection(inv.id)}
-                          className="w-4 h-4 cursor-pointer"
-                        />
-                      </td>
-                      <td className="sku-cell">#{inv.invoice_number || inv.id}</td>
-                      <td className="font-bold text-white">
-                        {inv.client_id 
-                          ? capitalize(clients.find(c => c.id === inv.client_id)?.name || `Cliente ${inv.client_id}`)
-                          : capitalize('Consumidor Final')
-                        }
-                      </td>
-                      <td className="text-xs text-[var(--text-secondary)]">
-                        {new Date(inv.invoice_date).toLocaleDateString()}
-                      </td>
-                      <td className="text-right font-mono font-bold text-[var(--accent-orange-light)]">
-                        ${inv.total_amount?.toFixed(2) || '0.00'}
-                      </td>
-                      <td className="text-center">
-                        <div className="flex items-center justify-center gap-3">
-                          <button
-                            onClick={() => handleDownloadPDF(inv)}
-                            title="Descargar PDF SRI"
-                            className="text-blue-400 hover:text-blue-300 flex items-center gap-1 font-bold text-xs"
-                          >
-                            <span className="material-symbols-outlined text-base">download</span>
-                            <span>PDF</span>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteInvoice(inv.id)}
-                            title="Eliminar registro"
-                            className="text-red-400 hover:text-red-300 flex items-center gap-1 text-xs"
-                          >
-                            <span className="material-symbols-outlined text-base">delete</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Barcode Scanner Modal */}
       {showBarcodeScanner && (
