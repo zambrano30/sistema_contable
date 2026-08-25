@@ -4,7 +4,6 @@
 
 #### 1. **Autenticación**
 - AuthContext configurado correctamente
-- Soporte para usuario demo
 - Manejo de sesiones con Supabase Auth
 - Rutas protegidas implementadas
 
@@ -75,10 +74,6 @@ Tienes varios archivos SQL - aquí está el estado:
 2. **Usuario en tabla users**
    - Status: ✅ Implementado (ensureUserExists)
    - Se crea automáticamente en primer acceso
-
-3. **Datos de prueba**
-   - Status: ⚠️ No hay datos de demostración
-   - Sugerencia: Crear script de seed data
 
 ---
 

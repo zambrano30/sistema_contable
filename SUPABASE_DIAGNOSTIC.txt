@@ -10,7 +10,6 @@ ESTADO GENERAL DEL PROYECTO
 │ ✅ Servicios implementados                                 │
 │ ✅ Páginas: Login, Dashboard, Products, Clients, Sales     │
 │ ✅ Manejo de autenticación                                 │
-│ ✅ Demo mode funcional                                     │
 └───────────────────────────────────────────────────────────┘
 
 ┌─ SUPABASE CLIENT ─────────────────────────────────────────┐
@@ -33,7 +32,6 @@ ESTADO GENERAL DEL PROYECTO
 
 ┌─ AUTENTICACIÓN ───────────────────────────────────────────┐
 │ ✅ Auth Service       - Implementado                       │
-│ ✅ Demo Mode          - Funciona sin Supabase              │
 │ ✅ AuthContext        - Manejo de sesiones                │
 │ 🟡 Users en DB        - [Por crear en Supabase]           │
 └───────────────────────────────────────────────────────────┘
@@ -143,8 +141,6 @@ console.log(test)
 | Supabase Conexión | ❌ No accesible | **Reactiva o crea nuevo** |
 | Base de Datos | 🟡 No existe | Ejecuta SQL scripts |
 | RLS Policies | 🟡 No existe | Ejecuta RLS scripts |
-| Autenticación | ✅ Funciona (demo) | OK |
-| Demo Mode | ✅ Funciona | Permite pruebas sin BD |
 
 ## 🎯 PRÓXIMOS PASOS
 

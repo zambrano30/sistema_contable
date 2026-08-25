@@ -35,12 +35,4 @@ fetch(`${supabaseUrl}/auth/v1/user`, {
   .then(data => console.log('Response:', data))
   .catch(e => console.error('❌ Error:', e.message))
 
-// Test 3: Verificar localStorage
-console.log('\n💾 Estado de localStorage:')
-const demoUser = localStorage.getItem('demo_user')
-console.log('demo_user guardado:', demoUser ? '✅ Sí' : '❌ No')
-if (demoUser) {
-  console.log('Contenido:', JSON.parse(demoUser))
-}
-
 console.log('\n✅ Diagnóstico completo. Revisa los resultados arriba.')

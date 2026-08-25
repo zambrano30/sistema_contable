@@ -7,7 +7,6 @@ import { useAuth } from '../contexts/AuthContext'
 
 export default function SalesPage() {
   const { user } = useAuth()
-  const isDemo = !!localStorage.getItem('demo_user')
   const [products, setProducts] = useState([])
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
@@ -87,21 +86,13 @@ export default function SalesPage() {
   const loadData = async () => {
     setLoading(true)
     
-    if (isDemo) {
-      const demoProducts = JSON.parse(localStorage.getItem('demo_products') || '[]')
-      const demoClients = JSON.parse(localStorage.getItem('demo_clients') || '[]')
-      
-      setProducts(demoProducts)
-      setClients(demoClients)
-    } else {
-      const [productsRes, clientsRes] = await Promise.all([
-        getAllProducts(),
-        getAllClients(),
-      ])
+    const [productsRes, clientsRes] = await Promise.all([
+      getAllProducts(),
+      getAllClients(),
+    ])
 
-      if (productsRes.ok) setProducts(productsRes.data)
-      if (clientsRes.ok) setClients(clientsRes.data)
-    }
+    if (productsRes.ok) setProducts(productsRes.data)
+    if (clientsRes.ok) setClients(clientsRes.data)
 
     setLoading(false)
   }
@@ -225,6 +216,13 @@ export default function SalesPage() {
     return { subtotal, taxAmount: 0, total }
   }
 
+  const getLocalDate = () => {
+    const today = new Date()
+    const month = String(today.getMonth() + 1).padStart(2, '0')
+    const day = String(today.getDate()).padStart(2, '0')
+    return `${today.getFullYear()}-${month}-${day}`
+  }
+
   const handleCreateInvoice = async (e) => {
     if (e) e.preventDefault()
     setError('')
@@ -248,7 +246,7 @@ export default function SalesPage() {
 
     const invoiceData = {
       client_id: isConsumerFinal ? null : parseInt(selectedClient),
-      invoice_date: new Date().toISOString().split('T')[0],
+      invoice_date: getLocalDate(),
       due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       subtotal,
       tax_amount: 0,
@@ -258,30 +256,15 @@ export default function SalesPage() {
       items: useSimpleInvoice ? [] : invoiceItems,
     }
 
-    if (isDemo) {
-      const demoInvoices = JSON.parse(localStorage.getItem('demo_invoices') || '[]')
-      const newInvoice = {
-        id: Date.now(),
-        invoice_number: `INV-DEMO-${Date.now()}`,
-        ...invoiceData
-      }
-      demoInvoices.push(newInvoice)
-      localStorage.setItem('demo_invoices', JSON.stringify(demoInvoices))
-      
+    const result = await createInvoice(invoiceData)
+
+    if (result.ok) {
+      const newInvoice = result.data
       await loadData()
       resetForm()
       alert(`✅ Factura creada exitosamente\nFactura: ${newInvoice.invoice_number}\nMonto: $${total.toFixed(2)}`)
     } else {
-      const result = await createInvoice(invoiceData)
-
-      if (result.ok) {
-        const newInvoice = result.data
-        await loadData()
-        resetForm()
-        alert(`✅ Factura creada exitosamente\nFactura: ${newInvoice.invoice_number}\nMonto: $${total.toFixed(2)}`)
-      } else {
-        setError(result.error)
-      }
+      setError(result.error)
     }
   }
 

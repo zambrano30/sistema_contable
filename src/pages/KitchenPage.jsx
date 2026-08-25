@@ -5,7 +5,6 @@ import { useAuth } from '../contexts/AuthContext'
 
 export default function KitchenPage() {
   const { user } = useAuth()
-  const isDemo = !!localStorage.getItem('demo_user')
 
   const [commands, setCommands] = useState([])
   const [loading, setLoading] = useState(false)
@@ -23,10 +22,6 @@ export default function KitchenPage() {
   // const loadCommands = async () => {
   //   setLoading(true)
   //
-  //   if (isDemo) {
-  //     // Cargar de localStorage en modo demo
-  //     const demoCommands = JSON.parse(localStorage.getItem('demo_commands') || '[]')
-  //     const sortedCommands = demoCommands.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
   //     
   //     // Contar nuevas comandas pendientes
   //     const newPendingCount = sortedCommands.filter(c => c.status === 'pending').length

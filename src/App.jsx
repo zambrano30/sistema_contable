@@ -1,5 +1,4 @@
 import './App.css'
-import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { Layout } from './components/Layout'
@@ -12,6 +11,7 @@ import InventoryPage from './pages/InventoryPage'
 import ExpensesPage from './pages/ExpensesPage'
 import KitchenPage from './pages/KitchenPage'
 import AdminPage from './pages/AdminPage'
+import CashClosingPage from './pages/CashClosingPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -93,6 +93,16 @@ function AppContent() {
           <ProtectedRoute>
             <Layout>
               <ExpensesPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cash-closing"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <CashClosingPage />
             </Layout>
           </ProtectedRoute>
         }

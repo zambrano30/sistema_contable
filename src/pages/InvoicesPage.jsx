@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import { getAllInvoices, deleteInvoice } from '../services/invoicesService'
 import { getAllClients } from '../services/clientsService'
 import { generateInvoicePDF } from '../services/invoicePdfService'
+import { getLocalDateKey } from '../lib/dateUtils'
 
 export default function InvoicesPage() {
-  const isDemo = !!localStorage.getItem('demo_user')
   const [invoices, setInvoices] = useState([])
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
@@ -19,22 +19,17 @@ export default function InvoicesPage() {
     setLoading(true)
     setError('')
 
-    if (isDemo) {
-      setInvoices(JSON.parse(localStorage.getItem('demo_invoices') || '[]'))
-      setClients(JSON.parse(localStorage.getItem('demo_clients') || '[]'))
-    } else {
-      const [invoicesResult, clientsResult] = await Promise.all([
-        getAllInvoices(),
-        getAllClients(),
-      ])
+    const [invoicesResult, clientsResult] = await Promise.all([
+      getAllInvoices(),
+      getAllClients(),
+    ])
 
-      if (invoicesResult.ok) {
-        setInvoices(invoicesResult.data)
-      } else {
-        setError(invoicesResult.error)
-      }
-      if (clientsResult.ok) setClients(clientsResult.data)
+    if (invoicesResult.ok) {
+      setInvoices(invoicesResult.data)
+    } else {
+      setError(invoicesResult.error)
     }
+    if (clientsResult.ok) setClients(clientsResult.data)
 
     setLoading(false)
   }
@@ -69,17 +64,11 @@ export default function InvoicesPage() {
   const handleDeleteInvoice = async (invoiceId) => {
     if (!window.confirm('¿Seguro que deseas eliminar esta factura? Esta acción no se puede deshacer.')) return
 
-    if (isDemo) {
-      const filteredInvoices = invoices.filter(invoice => invoice.id !== invoiceId)
-      localStorage.setItem('demo_invoices', JSON.stringify(filteredInvoices))
-      setInvoices(filteredInvoices)
+    const result = await deleteInvoice(invoiceId)
+    if (result.ok) {
+      await loadData()
     } else {
-      const result = await deleteInvoice(invoiceId)
-      if (result.ok) {
-        await loadData()
-      } else {
-        setError(`Error al eliminar: ${result.error}`)
-      }
+      setError(`Error al eliminar: ${result.error}`)
     }
   }
 
@@ -109,13 +98,8 @@ export default function InvoicesPage() {
     if (!window.confirm(`¿Seguro que deseas eliminar ${selectedInvoices.size} factura(s)?`)) return
 
     setLoading(true)
-    if (isDemo) {
-      const filteredInvoices = invoices.filter(invoice => !selectedInvoices.has(invoice.id))
-      localStorage.setItem('demo_invoices', JSON.stringify(filteredInvoices))
-    } else {
-      for (const invoiceId of selectedInvoices) {
-        await deleteInvoice(invoiceId)
-      }
+    for (const invoiceId of selectedInvoices) {
+      await deleteInvoice(invoiceId)
     }
 
     setSelectedInvoices(new Set())
@@ -199,7 +183,7 @@ export default function InvoicesPage() {
                         : 'Consumidor Final'}
                     </td>
                     <td className="text-xs text-[var(--text-secondary)]">
-                      {new Date(invoice.invoice_date).toLocaleDateString()}
+                      {new Date(`${getLocalDateKey(invoice.created_at || invoice.invoice_date)}T00:00:00`).toLocaleDateString()}
                     </td>
                     <td className="text-right font-mono font-bold text-[var(--accent-orange-light)]">
                       ${Number(invoice.total_amount || 0).toFixed(2)}

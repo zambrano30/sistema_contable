@@ -8,7 +8,6 @@ import { getAllExpenses } from '../services/expensesService'
 export default function DashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const isDemo = !!localStorage.getItem('demo_user')
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
     totalSales: 0,
@@ -32,33 +31,10 @@ export default function DashboardPage() {
       let clientsResult
       let recentInvoicesResult
 
-      if (isDemo) {
-        const demoInvoices = JSON.parse(localStorage.getItem('demo_invoices') || '[]')
-        const demoClients = JSON.parse(localStorage.getItem('demo_clients') || '[]')
-        const demoSales = calculateDemoSales(demoInvoices)
-        const statuses = demoInvoices.reduce((counts, invoice) => {
-          counts[invoice.status] = (counts[invoice.status] || 0) + 1
-          return counts
-        }, {})
-
-        salesResult = { ok: true, data: demoSales.current }
-        invoiceStatsResult = {
-          ok: true,
-          data: {
-            total: demoInvoices.length,
-            draft: statuses.draft || 0,
-            sent: statuses.sent || 0,
-            cancelled: statuses.cancelled || 0,
-          },
-        }
-        clientsResult = { ok: true, data: demoClients }
-        recentInvoicesResult = { ok: true, data: demoInvoices }
-      } else {
-        salesResult = await getTotalSales('month')
-        invoiceStatsResult = await getInvoiceStats()
-        clientsResult = await getAllClients()
-        recentInvoicesResult = await getAllInvoices()
-      }
+      salesResult = await getTotalSales('month')
+      invoiceStatsResult = await getInvoiceStats()
+      clientsResult = await getAllClients()
+      recentInvoicesResult = await getAllInvoices()
 
       const expensesResult = await getAllExpenses()
       const totalExpenses = expensesResult.ok 
@@ -277,35 +253,5 @@ export default function DashboardPage() {
       </div>
     </div>
   )
-}
-
-function calculateDemoSales(invoices) {
-  const now = new Date()
-  const startDate = new Date(now.getFullYear(), now.getMonth(), 1)
-  const previousStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const endPreviousPeriod = new Date(startDate)
-  endPreviousPeriod.setDate(endPreviousPeriod.getDate() - 1)
-  let currentTotal = 0
-  let previousTotal = 0
-
-  invoices.forEach((invoice) => {
-    const invoiceDate = new Date(invoice.invoice_date)
-    const total = Number(invoice.total_amount) || 0
-
-    if (invoiceDate >= startDate) currentTotal += total
-    if (invoiceDate >= previousStartDate && invoiceDate <= endPreviousPeriod) previousTotal += total
-  })
-
-  const monthlyGrowth = previousTotal > 0
-    ? ((currentTotal - previousTotal) / previousTotal) * 100
-    : 0
-
-  return {
-    current: {
-      total: currentTotal,
-      count: invoices.filter((invoice) => new Date(invoice.invoice_date) >= startDate).length,
-      monthlyGrowth: parseFloat(monthlyGrowth.toFixed(1)),
-    },
-  }
 }
 
