@@ -6,7 +6,6 @@ import { useAuth } from '../contexts/AuthContext'
 
 export default function InventoryPage() {
   const { user } = useAuth()
-  const isDemo = !!localStorage.getItem('demo_user')
   
   const [activeTab, setActiveTab] = useState('products')
   const [movements, setMovements] = useState([])
@@ -51,37 +50,17 @@ export default function InventoryPage() {
   const loadData = async () => {
     setLoading(true)
     
-    if (isDemo) {
-      const demoMovements = JSON.parse(localStorage.getItem('demo_movements') || '[]')
-      const demoProducts = JSON.parse(localStorage.getItem('demo_products') || '[]')
-      
-      setMovements(demoMovements)
-      setProducts(demoProducts)
-      
-      const totalItems = demoProducts.reduce((sum, p) => sum + (p.quantity || 0), 0)
-      const totalValue = demoProducts.reduce((sum, p) => sum + ((p.price || 0) * (p.quantity || 0)), 0)
-      const lowStock = demoProducts.filter(p => (p.quantity || 0) < (p.minimum_quantity || 10))
-      
-      setSummary({
-        totalItems,
-        totalValue,
-        lowStockCount: lowStock.length,
-        productCount: demoProducts.length
-      })
-      setLowStockProducts(lowStock)
-    } else {
-      const [movementsRes, productsRes, lowStockRes, summaryRes] = await Promise.all([
-        getAllInventoryMovements(),
-        getAllProducts(),
-        getLowStockProducts(),
-        getInventorySummary(),
-      ])
+    const [movementsRes, productsRes, lowStockRes, summaryRes] = await Promise.all([
+      getAllInventoryMovements(),
+      getAllProducts(),
+      getLowStockProducts(),
+      getInventorySummary(),
+    ])
 
-      if (movementsRes.ok) setMovements(movementsRes.data)
-      if (productsRes.ok) setProducts(productsRes.data)
-      if (lowStockRes.ok) setLowStockProducts(lowStockRes.data)
-      if (summaryRes.ok) setSummary(summaryRes.data)
-    }
+    if (movementsRes.ok) setMovements(movementsRes.data)
+    if (productsRes.ok) setProducts(productsRes.data)
+    if (lowStockRes.ok) setLowStockProducts(lowStockRes.data)
+    if (summaryRes.ok) setSummary(summaryRes.data)
 
     setLoading(false)
   }
@@ -100,38 +79,21 @@ export default function InventoryPage() {
       return
     }
 
-    if (isDemo) {
-      const demoMovements = JSON.parse(localStorage.getItem('demo_movements') || '[]')
-      demoMovements.push({
-        id: Date.now(),
-        product_id: parseInt(selectedProduct),
-        movement_type: movementType,
-        quantity: parseInt(quantity),
-        notes,
-        created_at: new Date().toISOString()
-      })
-      localStorage.setItem('demo_movements', JSON.stringify(demoMovements))
-      
+    const movementData = {
+      product_id: parseInt(selectedProduct),
+      movement_type: movementType,
+      quantity: parseInt(quantity),
+      notes,
+    }
+
+    const result = await createInventoryMovement(movementData)
+
+    if (result.ok) {
       await loadData()
       resetMovementForm()
       setError('')
     } else {
-      const movementData = {
-        product_id: parseInt(selectedProduct),
-        movement_type: movementType,
-        quantity: parseInt(quantity),
-        notes,
-      }
-
-      const result = await createInventoryMovement(movementData)
-
-      if (result.ok) {
-        await loadData()
-        resetMovementForm()
-        setError('')
-      } else {
-        setError(result.error)
-      }
+      setError(result.error)
     }
   }
 
@@ -175,58 +137,30 @@ export default function InventoryPage() {
       tax_percentage: parseFloat(productFormData.tax_percentage) || 15,
     }
 
-    if (isDemo) {
-      const demoProducts = JSON.parse(localStorage.getItem('demo_products') || '[]')
-      
-      if (editingProductId) {
-        const index = demoProducts.findIndex(p => p.id === editingProductId)
-        if (index >= 0) {
-          demoProducts[index] = { ...demoProducts[index], ...productData }
-        }
-      } else {
-        const newProduct = {
-          id: Date.now(),
-          ...productData
-        }
-        demoProducts.push(newProduct)
-      }
-      
-      localStorage.setItem('demo_products', JSON.stringify(demoProducts))
+    let result
+
+    if (editingProductId) {
+      result = await updateProduct(editingProductId, productData)
+    } else {
+      result = await createProduct(productData)
+    }
+
+    if (result.ok) {
       await loadData()
       resetProductForm()
     } else {
-      let result
-
-      if (editingProductId) {
-        result = await updateProduct(editingProductId, productData)
-      } else {
-        result = await createProduct(productData)
-      }
-
-      if (result.ok) {
-        await loadData()
-        resetProductForm()
-      } else {
-        setError(result.error)
-      }
+      setError(result.error)
     }
   }
 
   const handleDeleteProduct = async (id) => {
     if (!window.confirm('¿Confirmar eliminación del producto?')) return
 
-    if (isDemo) {
-      const demoProducts = JSON.parse(localStorage.getItem('demo_products') || '[]')
-      const filtered = demoProducts.filter(p => p.id !== id)
-      localStorage.setItem('demo_products', JSON.stringify(filtered))
+    const result = await deleteProduct(id)
+    if (result.ok) {
       await loadData()
     } else {
-      const result = await deleteProduct(id)
-      if (result.ok) {
-        await loadData()
-      } else {
-        setError(result.error)
-      }
+      setError(result.error)
     }
   }
 

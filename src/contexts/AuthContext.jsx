@@ -35,17 +35,8 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check if demo session exists
-    const storedDemoUser = localStorage.getItem('demo_user')
-    if (storedDemoUser) {
-      try {
-        setUser(JSON.parse(storedDemoUser))
-        setLoading(false)
-        return
-      } catch (e) {
-        localStorage.removeItem('demo_user')
-      }
-    }
+    ;['demo_user', 'demo_invoices', 'demo_clients', 'demo_products', 'demo_movements', 'demo_commands', 'demo_cooks', 'demo_vendors', 'cash_closings']
+      .forEach((key) => localStorage.removeItem(key))
 
     const initAuth = async () => {
       const result = await getSession()
@@ -75,47 +66,34 @@ export function AuthProvider({ children }) {
     initAuth()
 
     const unsubscribe = onAuthStateChange((session) => {
-      if (!localStorage.getItem('demo_user')) {
-        if (session?.user) {
-          // Obtener rol desde BD cuando cambia la sesión
-          getCurrentUser().then(dbUser => {
-            const userData = {
-              ...session.user,
-              role: normalizeRole(dbUser?.role || 'Administrador')
-            }
-            setUser(userData)
-          }).catch(() => {
-            // Fallback si hay error
-            session.user.role = 'Administrador'
-            setUser(session.user)
-          })
-        } else {
-          setUser(null)
-        }
+      if (session?.user) {
+        // Obtener rol desde BD cuando cambia la sesión
+        getCurrentUser().then(dbUser => {
+          const userData = {
+            ...session.user,
+            role: normalizeRole(dbUser?.role || 'Administrador')
+          }
+          setUser(userData)
+        }).catch(() => {
+          // Fallback si hay error
+          session.user.role = 'Administrador'
+          setUser(session.user)
+        })
+      } else {
+        setUser(null)
       }
     })
 
     return unsubscribe
   }, [])
 
-  const loginAsDemo = (email) => {
-    const demoUserObj = { 
-      email: email || 'admin@facturapro.com',
-      id: 'demo-user-admin',
-      role: 'Administrador'
-    }
-    localStorage.setItem('demo_user', JSON.stringify(demoUserObj))
-    setUser(demoUserObj)
-  }
-
   const logout = async () => {
-    localStorage.removeItem('demo_user')
     await signOut()
     setUser(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout, loginAsDemo }}>
+    <AuthContext.Provider value={{ user, loading, logout }}>
       {children}
     </AuthContext.Provider>
   )

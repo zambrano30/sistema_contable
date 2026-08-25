@@ -13,7 +13,6 @@ export async function ensureUserExists() {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
-      // Demo mode or unauthenticated session
       return true
     }
 

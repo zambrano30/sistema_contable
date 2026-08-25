@@ -6,7 +6,6 @@ import { createCookUser, getCookUsers, createVendorUser, getVendorUsers } from '
 export default function AdminPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const isDemo = !!localStorage.getItem('demo_user')
 
   const [cookUsers, setCookUsers] = useState([])
   const [vendorUsers, setVendorUsers] = useState([])
@@ -41,20 +40,13 @@ export default function AdminPage() {
   const loadUsers = async () => {
     setLoading(true)
 
-    if (isDemo) {
-      const demoCooks = JSON.parse(localStorage.getItem('demo_cooks') || '[]')
-      const demoVendors = JSON.parse(localStorage.getItem('demo_vendors') || '[]')
-      setCookUsers(demoCooks)
-      setVendorUsers(demoVendors)
-    } else {
-      const [cooksRes, vendorsRes] = await Promise.all([
-        getCookUsers(),
-        getVendorUsers()
-      ])
-      
-      if (cooksRes.ok) setCookUsers(cooksRes.data || [])
-      if (vendorsRes.ok) setVendorUsers(vendorsRes.data || [])
-    }
+    const [cooksRes, vendorsRes] = await Promise.all([
+      getCookUsers(),
+      getVendorUsers()
+    ])
+    
+    if (cooksRes.ok) setCookUsers(cooksRes.data || [])
+    if (vendorsRes.ok) setVendorUsers(vendorsRes.data || [])
 
     setLoading(false)
   }
@@ -81,32 +73,14 @@ export default function AdminPage() {
 
     setCreatingCook(true)
 
-    if (isDemo) {
-      const newCook = {
-        id: Date.now(),
-        email: cookEmail,
-        full_name: cookName,
-        role: 'cocinero',
-        created_at: new Date().toISOString()
-      }
+    const result = await createCookUser(cookEmail, cookPassword, cookName)
 
-      const demoCooks = JSON.parse(localStorage.getItem('demo_cooks') || '[]')
-      demoCooks.push(newCook)
-      localStorage.setItem('demo_cooks', JSON.stringify(demoCooks))
-
+    if (result.ok) {
       setSuccess(`✅ Cocinero "${cookName}" registrado exitosamente`)
       resetForm()
       loadUsers()
     } else {
-      const result = await createCookUser(cookEmail, cookPassword, cookName)
-
-      if (result.ok) {
-        setSuccess(`✅ Cocinero "${cookName}" registrado exitosamente`)
-        resetForm()
-        loadUsers()
-      } else {
-        setError(`Error creando cocinero: ${result.error}`)
-      }
+      setError(`Error creando cocinero: ${result.error}`)
     }
 
     setCreatingCook(false)
@@ -134,32 +108,14 @@ export default function AdminPage() {
 
     setCreatingVendor(true)
 
-    if (isDemo) {
-      const newVendor = {
-        id: Date.now(),
-        email: vendorEmail,
-        full_name: vendorName,
-        role: 'vendedor',
-        created_at: new Date().toISOString()
-      }
+    const result = await createVendorUser(vendorEmail, vendorPassword, vendorName)
 
-      const demoVendors = JSON.parse(localStorage.getItem('demo_vendors') || '[]')
-      demoVendors.push(newVendor)
-      localStorage.setItem('demo_vendors', JSON.stringify(demoVendors))
-
+    if (result.ok) {
       setSuccess(`✅ Vendedor "${vendorName}" registrado exitosamente`)
       resetForm()
       loadUsers()
     } else {
-      const result = await createVendorUser(vendorEmail, vendorPassword, vendorName)
-
-      if (result.ok) {
-        setSuccess(`✅ Vendedor "${vendorName}" registrado exitosamente`)
-        resetForm()
-        loadUsers()
-      } else {
-        setError(`Error creando vendedor: ${result.error}`)
-      }
+      setError(`Error creando vendedor: ${result.error}`)
     }
 
     setCreatingVendor(false)

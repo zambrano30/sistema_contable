@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { signIn, signUp } from '../services/authService'
-import { useAuth } from '../contexts/AuthContext'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -10,7 +9,6 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-  const { loginAsDemo } = useAuth()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -23,28 +21,18 @@ export default function LoginPage() {
 
       if (result.ok) {
         if (isSignUp && !result.data?.session) {
-          loginAsDemo(email)
-          navigate('/sales')
+          setError('Cuenta creada. Revisa tu correo para confirmar el registro.')
         } else if (result.data?.session?.user) {
-          navigate('/sales')
-        } else {
-          loginAsDemo(email)
           navigate('/sales')
         }
       } else {
-        loginAsDemo(email)
-        navigate('/sales')
+        setError(result.error)
       }
-    } catch (err) {
+    } catch {
       setError('Error inesperado. Intenta de nuevo.')
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleDemoAccess = () => {
-    loginAsDemo('admin@facturapro.com')
-    navigate('/sales')
   }
 
   return (
@@ -130,18 +118,6 @@ export default function LoginPage() {
             </span>
           </button>
         </form>
-
-        {/* Demo Mode Button */}
-        <div className="mt-6 pt-5 border-t border-[var(--border-color)] text-center">
-          <p className="text-xs text-[var(--text-tertiary)] mb-3">¿Deseas probar la plataforma sin registrarte?</p>
-          <button 
-            onClick={handleDemoAccess}
-            className="btn-secondary w-full justify-center py-3 text-sm hover:border-[var(--accent-orange)]/40"
-          >
-            <span className="material-symbols-outlined text-[var(--accent-orange)] animate-pulse">bolt</span>
-            <span>Acceso Instantáneo Modo Demo</span>
-          </button>
-        </div>
 
         <div className="auth-toggle mt-5 text-center">
           <p className="text-sm text-[var(--text-secondary)] m-0">

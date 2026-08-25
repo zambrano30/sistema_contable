@@ -9,7 +9,6 @@ export function Sidebar({ collapsed, onToggle }) {
   const [isOpen, setIsOpen] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || null)
   const [uploading, setUploading] = useState(false)
-  const [pendingCommands, setPendingCommands] = useState(0)
   const fileInputRef = useRef(null)
   
   const displayRole = user?.role || 'Administrador'
@@ -39,21 +38,6 @@ export function Sidebar({ collapsed, onToggle }) {
       }
     }
   }, [user?.id])
-
-  useEffect(() => {
-    const loadPendingCommands = () => {
-      const isDemo = !!localStorage.getItem('demo_user')
-      if (isDemo) {
-        const demoCommands = JSON.parse(localStorage.getItem('demo_commands') || '[]')
-        const pending = demoCommands.filter(c => c.status === 'pending').length
-        setPendingCommands(pending)
-      }
-    }
-
-    loadPendingCommands()
-    const interval = setInterval(loadPendingCommands, 5000)
-    return () => clearInterval(interval)
-  }, [])
 
   const handleUploadAvatar = async (e) => {
     const file = e.target.files?.[0]
@@ -86,6 +70,7 @@ export function Sidebar({ collapsed, onToggle }) {
     { label: 'Inventario', icon: 'warehouse', path: '/inventory' },
     { label: 'Cocina', icon: 'restaurant_menu', path: '/kitchen' },
     { label: 'Gastos', icon: 'trending_down', path: '/expenses' },
+    { label: 'Cierre de caja', icon: 'point_of_sale', path: '/cash-closing' },
   ]
 
   let menuItems = baseMenuItems
@@ -138,7 +123,7 @@ export function Sidebar({ collapsed, onToggle }) {
 
         <div className="header-user flex items-center gap-3">
           <div className="hidden md:flex flex-col text-right">
-            <span className="text-xs font-semibold text-[var(--text-primary)]">{user?.email || 'Usuario Demo'}</span>
+            <span className="text-xs font-semibold text-[var(--text-primary)]">{user?.email}</span>
             <span className="user-badge self-end mt-0.5">{displayRole}</span>
           </div>
 
@@ -208,11 +193,6 @@ export function Sidebar({ collapsed, onToggle }) {
             >
               <span className="material-symbols-outlined nav-icon">{item.icon}</span>
               <span className="nav-label">{item.label}</span>
-              {item.label === 'Cocina' && pendingCommands > 0 && (
-                <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
-                  {pendingCommands}
-                </span>
-              )}
             </button>
           ))}
         </nav>
@@ -235,11 +215,6 @@ export function Sidebar({ collapsed, onToggle }) {
           >
             <span className="material-symbols-outlined">{item.icon === 'dashboard' ? 'grid_view' : item.icon}</span>
             <span>{item.label}</span>
-            {item.label === 'Cocina' && pendingCommands > 0 && (
-              <span className="absolute top-0 right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
-                {pendingCommands}
-              </span>
-            )}
           </button>
         ))}
       </nav>

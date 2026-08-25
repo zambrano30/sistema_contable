@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext'
 
 export default function ClientsPage() {
   const { user } = useAuth()
-  const isDemo = !!localStorage.getItem('demo_user')
   
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
@@ -27,16 +26,11 @@ export default function ClientsPage() {
   const loadClients = async () => {
     setLoading(true)
     
-    if (isDemo) {
-      const demoClients = JSON.parse(localStorage.getItem('demo_clients') || '[]')
-      setClients(demoClients)
+    const result = await getAllClients()
+    if (result.ok) {
+      setClients(result.data || [])
     } else {
-      const result = await getAllClients()
-      if (result.ok) {
-        setClients(result.data || [])
-      } else {
-        setError(result.error)
-      }
+      setError(result.error)
     }
 
     setLoading(false)
@@ -76,40 +70,19 @@ export default function ClientsPage() {
       cedula_ruc: formData.tax_id,
     }
 
-    if (isDemo) {
-      const demoClients = JSON.parse(localStorage.getItem('demo_clients') || '[]')
-      
-      if (editingId) {
-        const index = demoClients.findIndex(c => c.id === editingId)
-        if (index >= 0) {
-          demoClients[index] = { ...demoClients[index], ...clientData }
-        }
-      } else {
-        const newClient = {
-          id: Date.now(),
-          ...clientData
-        }
-        demoClients.push(newClient)
-      }
-      
-      localStorage.setItem('demo_clients', JSON.stringify(demoClients))
+    let result
+
+    if (editingId) {
+      result = await updateClient(editingId, clientData)
+    } else {
+      result = await createClient(clientData)
+    }
+
+    if (result.ok) {
       await loadClients()
       resetForm()
     } else {
-      let result
-
-      if (editingId) {
-        result = await updateClient(editingId, clientData)
-      } else {
-        result = await createClient(clientData)
-      }
-
-      if (result.ok) {
-        await loadClients()
-        resetForm()
-      } else {
-        setError(result.error)
-      }
+      setError(result.error)
     }
   }
 
@@ -127,18 +100,11 @@ export default function ClientsPage() {
 
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este cliente?')) {
-      if (isDemo) {
-        const demoClients = JSON.parse(localStorage.getItem('demo_clients') || '[]')
-        const filtered = demoClients.filter(c => c.id !== id)
-        localStorage.setItem('demo_clients', JSON.stringify(filtered))
+      const result = await deleteClient(id)
+      if (result.ok) {
         await loadClients()
       } else {
-        const result = await deleteClient(id)
-        if (result.ok) {
-          await loadClients()
-        } else {
-          setError(result.error)
-        }
+        setError(result.error)
       }
     }
   }

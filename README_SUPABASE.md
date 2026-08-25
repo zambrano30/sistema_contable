@@ -5,7 +5,6 @@
 ```
 ✅ FRONTEND:        Completamente funcional
 ✅ SERVICIOS:       Listos para usar
-✅ AUTENTICACIÓN:   Demo mode disponible
 ✅ FORMULARIOS:     Validación completa
 ❌ SUPABASE:        No accesible (pausado)
 ```
@@ -21,7 +20,6 @@
 
 ### 2. Sistema de Autenticación ✅
 - Login real con Supabase Auth
-- Modo Demo para pruebas
 - Manejo de sesiones
 - Logout seguro
 
@@ -108,13 +106,12 @@ Solución:
 ### Test 1: En el Navegador
 ```
 1. Abre: http://localhost:5173
-2. Click: "Acceso Rápido / Modo Demo"
-3. Haz login automático
-4. Ve a: Productos
-5. Click: "Nuevo Producto"
-6. Llena el formulario
-7. Click: "Crear Producto"
-8. ✅ Si aparece en la lista → ¡FUNCIONA!
+2. Inicia sesión con una cuenta de Supabase
+3. Ve a: Productos
+4. Click: "Nuevo Producto"
+5. Llena el formulario
+6. Click: "Crear Producto"
+7. ✅ Si aparece en la lista → ¡FUNCIONA!
 ```
 
 ### Test 2: Validar Configuración
@@ -157,22 +154,11 @@ npm run dev
 # 3. Abre en navegador
 # http://localhost:5173
 
-# 4. Demo login
-# Email: admin@facturapro.com
-# Password: (cualquiera, es demo)
 ```
 
 ---
 
 ## 💡 TIPS
-
-### Modo Demo (Sin necesidad de BD)
-```
-Click: "Acceso Rápido / Modo Demo"
-→ Inicia sesión automáticamente
-→ Puedes navegar pero no guardar en BD
-→ Perfecto para pruebas de UI
-```
 
 ### Dev Tools
 ```

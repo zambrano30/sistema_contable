@@ -5,7 +5,6 @@ import { useAuth } from '../contexts/AuthContext'
 
 export default function ProductsPage() {
   const { user } = useAuth()
-  const isDemo = !!localStorage.getItem('demo_user')
   
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -34,16 +33,11 @@ export default function ProductsPage() {
   const loadProducts = async () => {
     setLoading(true)
     
-    if (isDemo) {
-      const demoProducts = JSON.parse(localStorage.getItem('demo_products') || '[]')
-      setProducts(demoProducts)
+    const result = await getAllProducts()
+    if (result.ok) {
+      setProducts(result.data || [])
     } else {
-      const result = await getAllProducts()
-      if (result.ok) {
-        setProducts(result.data || [])
-      } else {
-        setError(result.error)
-      }
+      setError(result.error)
     }
 
     setLoading(false)
@@ -103,40 +97,19 @@ export default function ProductsPage() {
       tax_percentage: parseFloat(formData.tax_percentage) || 15,
     }
 
-    if (isDemo) {
-      const demoProducts = JSON.parse(localStorage.getItem('demo_products') || '[]')
-      
-      if (editingId) {
-        const index = demoProducts.findIndex(p => p.id === editingId)
-        if (index >= 0) {
-          demoProducts[index] = { ...demoProducts[index], ...productData }
-        }
-      } else {
-        const newProduct = {
-          id: Date.now(),
-          ...productData
-        }
-        demoProducts.push(newProduct)
-      }
-      
-      localStorage.setItem('demo_products', JSON.stringify(demoProducts))
+    let result
+
+    if (editingId) {
+      result = await updateProduct(editingId, productData)
+    } else {
+      result = await createProduct(productData)
+    }
+
+    if (result.ok) {
       await loadProducts()
       resetForm()
     } else {
-      let result
-
-      if (editingId) {
-        result = await updateProduct(editingId, productData)
-      } else {
-        result = await createProduct(productData)
-      }
-
-      if (result.ok) {
-        await loadProducts()
-        resetForm()
-      } else {
-        setError(result.error)
-      }
+      setError(result.error)
     }
   }
 
@@ -159,18 +132,11 @@ export default function ProductsPage() {
 
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este producto del catálogo?')) {
-      if (isDemo) {
-        const demoProducts = JSON.parse(localStorage.getItem('demo_products') || '[]')
-        const filtered = demoProducts.filter(p => p.id !== id)
-        localStorage.setItem('demo_products', JSON.stringify(filtered))
+      const result = await deleteProduct(id)
+      if (result.ok) {
         await loadProducts()
       } else {
-        const result = await deleteProduct(id)
-        if (result.ok) {
-          await loadProducts()
-        } else {
-          setError(result.error)
-        }
+        setError(result.error)
       }
     }
   }

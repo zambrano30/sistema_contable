@@ -11,7 +11,6 @@
 - ✅ Variables de ambiente (.env) configuradas correctamente
 - ✅ Supabase client inicializado en `src/lib/supabaseClient.js`
 - ✅ Manejo de errores en servicios
-- ✅ Sistema de "Demo Mode" para pruebas sin Supabase
 
 ### 2. **Estructura de Servicios**
 Todos los servicios tienen estructura consistente:
@@ -26,7 +25,6 @@ Todos los servicios tienen estructura consistente:
 - ✅ Try-catch en todos los servicios
 - ✅ Validación de configuración antes de operaciones
 - ✅ Mensajes de error descriptivos
-- ✅ Fallback para modo demo
 
 ### 4. **Mapeo de Datos**
 - ✅ `productsService` mapea correctamente:
@@ -220,7 +218,6 @@ SUPABASE_REVIEW.md                      ← Este archivo 🆕
 
 ### Para Desarrollo
 1. Usa `simple-rls-policies.sql` para más libertad
-2. Usa "Demo Mode" cuando Supabase no esté disponible
 3. Verifica la consola del navegador (F12) para errores
 
 ### Para Producción
