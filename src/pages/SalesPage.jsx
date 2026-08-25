@@ -24,6 +24,7 @@ export default function SalesPage() {
   const [useSimpleInvoice, setUseSimpleInvoice] = useState(false)
   const [simpleSubtotal, setSimpleSubtotal] = useState(0)
   const [simpleDiscount, setSimpleDiscount] = useState(0)
+  const [paymentMethod, setPaymentMethod] = useState('cash')
 
   // Item form
   const [itemProduct, setItemProduct] = useState('')
@@ -252,6 +253,7 @@ export default function SalesPage() {
       tax_amount: 0,
       discount_amount: useSimpleInvoice ? parseFloat(simpleDiscount) : parseFloat(discountAmount),
       total_amount: total,
+      payment_method: paymentMethod,
       notes: notes || (isConsumerFinal ? 'Consumidor Final' : ''),
       items: useSimpleInvoice ? [] : invoiceItems,
     }
@@ -278,6 +280,7 @@ export default function SalesPage() {
     setUseSimpleInvoice(false)
     setSimpleSubtotal(0)
     setSimpleDiscount(0)
+    setPaymentMethod('cash')
   }
 
   const { subtotal, taxAmount, total } = calculateTotals()
@@ -792,6 +795,13 @@ export default function SalesPage() {
             </h3>
 
             <div className="space-y-3 font-mono text-sm">
+              <div className="form-group font-sans mb-4">
+                <label htmlFor="payment-method">Método de pago</label>
+                <select id="payment-method" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                  <option value="cash">Efectivo</option>
+                  <option value="transfer">Transferencia</option>
+                </select>
+              </div>
               <div className="flex justify-between text-[var(--text-secondary)]">
                 <span>Subtotal Neto:</span>
                 <span className="font-bold text-white">${subtotal.toFixed(2)}</span>

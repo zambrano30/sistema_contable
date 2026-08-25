@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getAllExpenses, createExpense, updateExpense, deleteExpense } from '../services/expensesService'
+import { getLocalDateKey } from '../lib/dateUtils'
 
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState([])
@@ -402,7 +403,7 @@ export default function ExpensesPage() {
                         {exp.notes && <p className="text-xs text-[var(--text-tertiary)] m-0">{exp.notes}</p>}
                       </td>
                       <td className="text-xs text-[var(--text-secondary)]">
-                        {new Date(exp.expense_date).toLocaleDateString()}
+                        {new Date(`${getLocalDateKey(exp.expense_date)}T00:00:00`).toLocaleDateString()}
                       </td>
                       <td className="text-right font-mono font-bold text-red-400">
                         ${exp.amount.toFixed(2)}
