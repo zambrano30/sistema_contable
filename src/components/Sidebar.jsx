@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
-export function Sidebar() {
+export function Sidebar({ collapsed, onToggle }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout } = useAuth()
@@ -81,6 +81,7 @@ export function Sidebar() {
 
   const baseMenuItems = [
     { label: 'Ventas', icon: 'receipt_long', path: '/sales' },
+    { label: 'Facturas', icon: 'description', path: '/invoices' },
     { label: 'Clientes', icon: 'group', path: '/clients' },
     { label: 'Inventario', icon: 'warehouse', path: '/inventory' },
     { label: 'Cocina', icon: 'restaurant_menu', path: '/kitchen' },
@@ -96,6 +97,7 @@ export function Sidebar() {
   } else if (user?.role === 'Vendedor') {
     menuItems = [
       { label: 'Ventas', icon: 'receipt_long', path: '/sales' },
+      { label: 'Facturas', icon: 'description', path: '/invoices' },
       { label: 'Clientes', icon: 'group', path: '/clients' },
     ]
   } else if (user?.role === 'Administrador') {
@@ -172,12 +174,20 @@ export function Sidebar() {
       {isOpen && <div className="sidebar-overlay" onClick={() => setIsOpen(false)}></div>}
 
       {/* Desktop & Mobile Drawer Sidebar */}
-      <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
+      <aside className={`sidebar ${isOpen ? 'open' : ''} ${collapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-header">
           <h2>
             <span className="material-symbols-outlined text-[var(--accent-orange)]">shield_person</span>
             <span>Panel {displayRole}</span>
           </h2>
+          <button
+            className="sidebar-toggle"
+            onClick={onToggle}
+            aria-label={collapsed ? 'Mostrar menú lateral' : 'Ocultar menú lateral'}
+            title={collapsed ? 'Mostrar menú lateral' : 'Ocultar menú lateral'}
+          >
+            <span className="material-symbols-outlined">{collapsed ? 'right_panel_open' : 'left_panel_close'}</span>
+          </button>
           <button 
             className="text-[var(--text-tertiary)] hover:text-white bg-none border-none cursor-pointer lg:hidden flex items-center"
             onClick={() => setIsOpen(false)}
@@ -210,7 +220,7 @@ export function Sidebar() {
         <div className="p-4 border-t border-[var(--border-color)]">
           <button className="logout-btn" onClick={handleLogout}>
             <span className="material-symbols-outlined">logout</span>
-            <span>Cerrar sesión</span>
+            <span className="nav-label">Cerrar sesión</span>
           </button>
         </div>
       </aside>

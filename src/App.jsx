@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import ClientsPage from './pages/ClientsPage'
 import SalesPage from './pages/SalesPage'
+import InvoicesPage from './pages/InvoicesPage'
 import InventoryPage from './pages/InventoryPage'
 import ExpensesPage from './pages/ExpensesPage'
 import KitchenPage from './pages/KitchenPage'
@@ -62,6 +63,16 @@ function AppContent() {
           <ProtectedRoute>
             <Layout>
               <SalesPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/invoices"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <InvoicesPage />
             </Layout>
           </ProtectedRoute>
         }
