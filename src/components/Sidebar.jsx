@@ -71,6 +71,7 @@ export function Sidebar({ collapsed, onToggle }) {
     { label: 'Cocina', icon: 'restaurant_menu', path: '/kitchen' },
     { label: 'Gastos', icon: 'trending_down', path: '/expenses' },
     { label: 'Cierre de caja', icon: 'point_of_sale', path: '/cash-closing' },
+    { label: 'Contar monedas', icon: 'toll', path: '/coin-counter' },
   ]
 
   let menuItems = baseMenuItems

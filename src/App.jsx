@@ -12,6 +12,7 @@ import ExpensesPage from './pages/ExpensesPage'
 import KitchenPage from './pages/KitchenPage'
 import AdminPage from './pages/AdminPage'
 import CashClosingPage from './pages/CashClosingPage'
+import CoinCounterPage from './pages/CoinCounterPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -103,6 +104,16 @@ function AppContent() {
           <ProtectedRoute>
             <Layout>
               <CashClosingPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coin-counter"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <CoinCounterPage />
             </Layout>
           </ProtectedRoute>
         }

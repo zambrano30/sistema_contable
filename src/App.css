@@ -837,3 +837,200 @@ textarea:focus {
   padding: 1.75rem;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
 }
+
+.coin-total-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 159, 10, 0.35);
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(255, 159, 10, 0.18), rgba(18, 23, 33, 0.8));
+}
+
+.coin-total-card strong {
+  color: var(--accent-orange);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.5rem;
+}
+
+.coin-total-card > span:last-child {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.coin-counter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.coin-counter-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  background: rgba(18, 23, 33, 0.75);
+}
+
+.coin-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 2px solid var(--accent-orange);
+  border-radius: 50%;
+  color: var(--accent-orange);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+}
+
+.coin-denomination {
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.coin-label {
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
+}
+
+.coin-counter-card input {
+  min-height: 3rem;
+  text-align: center;
+  color: var(--accent-orange-light);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.coin-subtotal {
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+.coin-print-table {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .coin-counter-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media print {
+  .coin-counter-page .coin-counter-grid {
+    display: none;
+  }
+
+  .coin-print-table {
+    display: block;
+  }
+
+  .coin-print-table h2 {
+    color: #111 !important;
+  }
+
+  .coin-print-table table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .coin-print-table th,
+  .coin-print-table td {
+    padding: 0.55rem;
+    border-bottom: 1px solid #ccc;
+    color: #111 !important;
+    text-align: left;
+  }
+
+  .coin-print-table th:last-child,
+  .coin-print-table td:last-child {
+    text-align: right;
+  }
+}
+
+@media print {
+  .top-header,
+  .sidebar,
+  .bottom-nav,
+  .page-header button,
+  .print-hide,
+  .modal-overlay,
+  button {
+    display: none !important;
+  }
+
+  .main-content {
+    margin: 0 !important;
+    padding: 1rem !important;
+    max-width: none;
+  }
+
+  .app-layout,
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  .card,
+  .bento-card,
+  .table-wrapper {
+    background: #fff !important;
+    color: #111 !important;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+  }
+
+  .custom-table th,
+  .custom-table td,
+  h1,
+  h2,
+  h3,
+  p,
+  span {
+    color: #111 !important;
+  }
+}
+
+.quantity-input {
+  width: 4.5rem !important;
+  min-width: 4.5rem;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.35rem !important;
+  color: var(--accent-orange-light);
+  background: rgba(255, 159, 10, 0.1);
+  border-color: rgba(255, 159, 10, 0.35);
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.quantity-input:focus {
+  background: rgba(255, 159, 10, 0.16);
+  border-color: var(--accent-orange);
+  box-shadow: 0 0 0 3px rgba(255, 159, 10, 0.2);
+}
+
+.quantity-input::-webkit-inner-spin-button,
+.quantity-input::-webkit-outer-spin-button {
+  opacity: 1;
+  height: 1.25rem;
+}
+
+@media (max-width: 639px) {
+  .quantity-input {
+    min-height: 3rem;
+    width: 4.75rem !important;
+    min-width: 4.75rem;
+    font-size: 1.05rem;
+  }
+}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getAllExpenses, createExpense, updateExpense, deleteExpense } from '../services/expensesService'
+import { getAllProviders, createProvider } from '../services/providersService'
 import { getLocalDateKey } from '../lib/dateUtils'
 
 export default function ExpensesPage() {
@@ -8,14 +9,22 @@ export default function ExpensesPage() {
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  const [providers, setProviders] = useState([])
+  const [showNewProvider, setShowNewProvider] = useState(false)
+  const [newProviderName, setNewProviderName] = useState('')
+  const [creatingProvider, setCreatingProvider] = useState(false)
+  const [useNewExpenseProduct, setUseNewExpenseProduct] = useState(false)
+  const [pendingExpenses, setPendingExpenses] = useState([])
+  const [savingPending, setSavingPending] = useState(false)
 
   const [formData, setFormData] = useState({
+    provider_id: 'varios',
     category: 'pasteles',
     item_name: '',
     description: '',
-    quantity: 1,
-    unit_price: 0,
-    amount: 0,
+    quantity: '',
+    unit_price: '',
+    amount: '',
     expense_date: new Date().toISOString().split('T')[0],
     notes: '',
   })
@@ -44,14 +53,38 @@ export default function ExpensesPage() {
 
   const loadData = async () => {
     setLoading(true)
-    const result = await getAllExpenses()
+    const [expensesResult, providersResult] = await Promise.all([
+      getAllExpenses(),
+      getAllProviders(),
+    ])
+
+    if (expensesResult.ok) {
+      setExpenses(expensesResult.data || [])
+      calculateCategoryTotals(expensesResult.data || [])
+    } else setError(expensesResult.error)
+
+    if (providersResult.ok) setProviders(providersResult.data || [])
+    else setError(providersResult.error)
+
+    setLoading(false)
+  }
+
+  const handleCreateProvider = async (e) => {
+    e.preventDefault()
+    const name = newProviderName.trim()
+    if (!name) return
+
+    setCreatingProvider(true)
+    const result = await createProvider(name)
     if (result.ok) {
-      setExpenses(result.data || [])
-      calculateCategoryTotals(result.data || [])
+      setProviders((currentProviders) => [...currentProviders, result.data].sort((a, b) => a.name.localeCompare(b.name)))
+      setFormData((currentData) => ({ ...currentData, provider_id: result.data.id.toString() }))
+      setNewProviderName('')
+      setShowNewProvider(false)
     } else {
       setError(result.error)
     }
-    setLoading(false)
+    setCreatingProvider(false)
   }
 
   const calculateCategoryTotals = (expenseList) => {
@@ -81,32 +114,57 @@ export default function ExpensesPage() {
     const updatedData = { ...formData, [name]: value }
 
     if (name === 'quantity' || name === 'unit_price') {
-      updatedData.amount = calculateAmount(updatedData.quantity, updatedData.unit_price)
+      updatedData.amount = updatedData.quantity !== '' && updatedData.unit_price !== ''
+        ? calculateAmount(updatedData.quantity, updatedData.unit_price)
+        : ''
     }
 
     if (name === 'amount') {
-      updatedData.amount = parseFloat(value) || 0
+      updatedData.amount = value === '' ? '' : parseFloat(value) || 0
     }
 
     setFormData(updatedData)
+  }
+
+  const expenseProducts = [...new Set(
+    expenses
+      .map((expense) => expense.item_name?.trim())
+      .filter(Boolean)
+  )].sort((firstProduct, secondProduct) => firstProduct.localeCompare(secondProduct))
+
+  const handleExpenseProductChange = (e) => {
+    const value = e.target.value
+    if (value === '__new__') {
+      setUseNewExpenseProduct(true)
+      setFormData((currentData) => ({ ...currentData, item_name: '' }))
+      return
+    }
+
+    setUseNewExpenseProduct(false)
+    setFormData((currentData) => ({ ...currentData, item_name: value }))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
 
-    if (!formData.item_name || formData.amount <= 0) {
-      setError('Nombre del gasto y monto válidos requeridos')
+    const quantity = parseFloat(formData.quantity)
+    const unitPrice = parseFloat(formData.unit_price)
+    const amount = parseFloat(formData.amount)
+
+    if (!formData.item_name || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitPrice) || unitPrice < 0 || !Number.isFinite(amount) || amount <= 0) {
+      setError('Producto, cantidad, precio unitario y monto válidos requeridos')
       return
     }
 
     const expenseData = {
+      provider_id: formData.provider_id === 'varios' ? null : parseInt(formData.provider_id),
       category: formData.category,
       item_name: formData.item_name,
       description: formData.description,
-      quantity: parseFloat(formData.quantity) || 1,
-      unit_price: parseFloat(formData.unit_price) || 0,
-      amount: parseFloat(formData.amount) || 0,
+      quantity,
+      unit_price: unitPrice,
+      amount,
       expense_date: formData.expense_date,
       notes: formData.notes,
     }
@@ -120,24 +178,51 @@ export default function ExpensesPage() {
         setError(result.error)
       }
     } else {
-      const result = await createExpense(expenseData)
-      if (result.ok) {
-        await loadData()
-        resetForm()
-      } else {
-        setError(result.error)
-      }
+      setPendingExpenses((currentExpenses) => [...currentExpenses, { ...expenseData, pendingId: crypto.randomUUID() }])
+      setFormData((currentData) => ({
+        ...currentData,
+        item_name: '',
+        quantity: '',
+        unit_price: '',
+        amount: '',
+        description: '',
+        notes: '',
+      }))
+      setUseNewExpenseProduct(false)
     }
   }
 
+  const removePendingExpense = (pendingId) => {
+    setPendingExpenses((currentExpenses) => currentExpenses.filter((expense) => expense.pendingId !== pendingId))
+  }
+
+  const savePendingExpenses = async () => {
+    if (pendingExpenses.length === 0) return
+
+    setSavingPending(true)
+    const results = await Promise.all(pendingExpenses.map(({ pendingId, ...expense }) => createExpense(expense)))
+    const failedResult = results.find((result) => !result.ok)
+
+    if (failedResult) {
+      setError(failedResult.error)
+    } else {
+      await loadData()
+      setPendingExpenses([])
+      resetForm()
+    }
+    setSavingPending(false)
+  }
+
   const handleEdit = (expense) => {
+    setUseNewExpenseProduct(false)
     setFormData({
+      provider_id: expense.provider_id?.toString() || 'varios',
       category: expense.category,
       item_name: expense.item_name,
       description: expense.description || '',
-      quantity: expense.quantity || 1,
-      unit_price: expense.unit_price || 0,
-      amount: expense.amount || 0,
+      quantity: expense.quantity ?? '',
+      unit_price: expense.unit_price ?? '',
+      amount: expense.amount ?? '',
       expense_date: expense.expense_date,
       notes: expense.notes || '',
     })
@@ -158,17 +243,22 @@ export default function ExpensesPage() {
 
   const resetForm = () => {
     setFormData({
+      provider_id: 'varios',
       category: 'pasteles',
       item_name: '',
       description: '',
-      quantity: 1,
-      unit_price: 0,
-      amount: 0,
+      quantity: '',
+      unit_price: '',
+      amount: '',
       expense_date: new Date().toISOString().split('T')[0],
       notes: '',
     })
     setShowForm(false)
     setEditingId(null)
+    setShowNewProvider(false)
+    setNewProviderName('')
+    setUseNewExpenseProduct(false)
+    setPendingExpenses([])
   }
 
   const filteredExpenses = filterCategory === 'all' 
@@ -204,6 +294,10 @@ export default function ExpensesPage() {
         >
           <span className="material-symbols-outlined">add</span>
           <span>{editingId ? 'Actualizar Gasto' : 'Registrar Nuevo Gasto'}</span>
+        </button>
+        <button type="button" onClick={() => window.print()} className="btn-secondary print-hide">
+          <span className="material-symbols-outlined">print</span>
+          <span>Imprimir</span>
         </button>
       </header>
 
@@ -269,6 +363,55 @@ export default function ExpensesPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="form-group">
+                <label htmlFor="expense-provider">Proveedor</label>
+                <div className="flex gap-2">
+                  <select
+                    id="expense-provider"
+                    name="provider_id"
+                    value={formData.provider_id}
+                    onChange={handleFormChange}
+                    className="flex-1"
+                  >
+                    <option value="varios">Varios / Sin proveedor</option>
+                    {providers.map((provider) => (
+                      <option key={provider.id} value={provider.id}>
+                        {provider.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowNewProvider(!showNewProvider)}
+                    className="btn-secondary whitespace-nowrap"
+                  >
+                    <span className="material-symbols-outlined">person_add</span>
+                    <span>Nuevo</span>
+                  </button>
+                </div>
+              </div>
+
+              {showNewProvider && (
+                <div className="p-3 rounded-xl border border-[var(--accent-orange)]/30 bg-[var(--accent-orange)]/10">
+                  <div className="flex gap-2 items-end">
+                    <div className="form-group flex-1">
+                      <label htmlFor="new-provider-name">Nombre del proveedor</label>
+                      <input
+                        id="new-provider-name"
+                        type="text"
+                        value={newProviderName}
+                        onChange={(e) => setNewProviderName(e.target.value)}
+                        placeholder="Ej: Distribuidora Central"
+                        autoFocus
+                      />
+                    </div>
+                    <button type="button" onClick={handleCreateProvider} disabled={creatingProvider || !newProviderName.trim()} className="btn-primary">
+                      {creatingProvider ? 'Guardando...' : 'Guardar'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="form-group">
                 <label>Categoría del Gasto</label>
                 <select
                   name="category"
@@ -284,15 +427,30 @@ export default function ExpensesPage() {
               </div>
 
               <div className="form-group">
-                <label>Nombre / Detalle del Gasto *</label>
-                <input
-                  type="text"
-                  name="item_name"
-                  value={formData.item_name}
-                  onChange={handleFormChange}
-                  placeholder="Ej: Insumos de empaque, Energía eléctrica..."
+                <label htmlFor="expense-product">Producto / Detalle del Gasto *</label>
+                <select
+                  id="expense-product"
+                  value={useNewExpenseProduct ? '__new__' : formData.item_name}
+                  onChange={handleExpenseProductChange}
                   required
-                />
+                >
+                  <option value="">Selecciona un producto</option>
+                  {expenseProducts.map((product) => (
+                    <option key={product} value={product}>{product}</option>
+                  ))}
+                  <option value="__new__">+ Crear nuevo producto</option>
+                </select>
+                {useNewExpenseProduct && (
+                  <input
+                    type="text"
+                    name="item_name"
+                    value={formData.item_name}
+                    onChange={handleFormChange}
+                    placeholder="Escribe el nombre del nuevo producto"
+                    autoFocus
+                    required
+                  />
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -332,6 +490,33 @@ export default function ExpensesPage() {
                 </div>
               </div>
 
+              {!editingId && pendingExpenses.length > 0 && (
+                <div className="space-y-2 rounded-xl border border-[var(--border-color)] p-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-white m-0">Gastos de esta sesión ({pendingExpenses.length})</h3>
+                    <span className="text-xs text-[var(--text-secondary)]">
+                      ${pendingExpenses.reduce((sum, expense) => sum + expense.amount, 0).toFixed(2)}
+                    </span>
+                  </div>
+                  {pendingExpenses.map((expense) => (
+                    <div key={expense.pendingId} className="flex items-center justify-between gap-3 rounded-lg bg-white/5 px-3 py-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-white truncate m-0">{expense.item_name}</p>
+                        <p className="text-xs text-[var(--text-secondary)] m-0">
+                          {expense.quantity} x ${expense.unit_price.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-sm font-mono text-red-300">${expense.amount.toFixed(2)}</span>
+                        <button type="button" onClick={() => removePendingExpense(expense.pendingId)} className="text-red-400 hover:text-red-300" title="Quitar gasto">
+                          <span className="material-symbols-outlined text-lg">delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="form-group">
                 <label>Fecha de Registro</label>
                 <input
@@ -358,9 +543,15 @@ export default function ExpensesPage() {
                   Cancelar
                 </button>
                 <button type="submit" className="btn-primary">
-                  <span className="material-symbols-outlined">save</span>
-                  <span>{editingId ? 'Actualizar' : 'Guardar'} Gasto</span>
+                  <span className="material-symbols-outlined">{editingId ? 'save' : 'playlist_add'}</span>
+                  <span>{editingId ? 'Actualizar Gasto' : 'Agregar Gasto'}</span>
                 </button>
+                {!editingId && pendingExpenses.length > 0 && (
+                  <button type="button" onClick={savePendingExpenses} disabled={savingPending} className="btn-primary">
+                    <span className="material-symbols-outlined">save</span>
+                    <span>{savingPending ? 'Guardando...' : `Guardar Todos (${pendingExpenses.length})`}</span>
+                  </button>
+                )}
               </div>
             </form>
           </div>
