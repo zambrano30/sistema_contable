@@ -16,20 +16,20 @@ export default function SalesPage() {
   // Form state
   const [selectedClient, setSelectedClient] = useState('')
   const [invoiceItems, setInvoiceItems] = useState([])
-  const [discountAmount, setDiscountAmount] = useState(0)
+  const [discountAmount, setDiscountAmount] = useState('')
   const [notes, setNotes] = useState('')
 
   // Consumer final and simple invoice options
   const [isConsumerFinal, setIsConsumerFinal] = useState(false)
   const [useSimpleInvoice, setUseSimpleInvoice] = useState(false)
-  const [simpleSubtotal, setSimpleSubtotal] = useState(0)
-  const [simpleDiscount, setSimpleDiscount] = useState(0)
+  const [simpleSubtotal, setSimpleSubtotal] = useState('')
+  const [simpleDiscount, setSimpleDiscount] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('cash')
 
   // Item form
   const [itemProduct, setItemProduct] = useState('')
   const [itemQuantity, setItemQuantity] = useState('')
-  const [itemDiscount, setItemDiscount] = useState(0)
+  const [itemDiscount, setItemDiscount] = useState('')
 
   // Search states
   const [clientSearchQuery, setClientSearchQuery] = useState('')
@@ -52,6 +52,72 @@ export default function SalesPage() {
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false)
   
   const barcodeInputRef = useRef(null)
+  const draftRestoredRef = useRef(false)
+  const draftStorageKey = `sales_invoice_draft_${user?.id || 'guest'}`
+
+  useEffect(() => {
+    draftRestoredRef.current = false
+
+    try {
+      const savedDraft = localStorage.getItem(draftStorageKey)
+      if (savedDraft) {
+        const draft = JSON.parse(savedDraft)
+        setShowForm(draft.showForm ?? true)
+        setSelectedClient(draft.selectedClient || '')
+        setInvoiceItems(Array.isArray(draft.invoiceItems) ? draft.invoiceItems : [])
+        setDiscountAmount(draft.discountAmount || '')
+        setNotes(draft.notes || '')
+        setIsConsumerFinal(Boolean(draft.isConsumerFinal))
+        setUseSimpleInvoice(Boolean(draft.useSimpleInvoice))
+        setSimpleSubtotal(draft.simpleSubtotal || '')
+        setSimpleDiscount(draft.simpleDiscount || '')
+        setPaymentMethod(draft.paymentMethod || 'cash')
+      }
+    } catch (error) {
+      console.error('No se pudo restaurar el borrador de factura:', error)
+      localStorage.removeItem(draftStorageKey)
+    }
+
+    draftRestoredRef.current = true
+  }, [draftStorageKey])
+
+  useEffect(() => {
+    if (!draftRestoredRef.current) return
+
+    const hasDraft = showForm || selectedClient || invoiceItems.length > 0 || notes ||
+      isConsumerFinal || useSimpleInvoice || Number(simpleSubtotal) > 0 ||
+      Number(simpleDiscount) > 0 || Number(discountAmount) > 0
+
+    if (!hasDraft) {
+      localStorage.removeItem(draftStorageKey)
+      return
+    }
+
+    localStorage.setItem(draftStorageKey, JSON.stringify({
+      showForm,
+      selectedClient,
+      invoiceItems,
+      discountAmount,
+      notes,
+      isConsumerFinal,
+      useSimpleInvoice,
+      simpleSubtotal,
+      simpleDiscount,
+      paymentMethod,
+    }))
+  }, [
+    draftStorageKey,
+    showForm,
+    selectedClient,
+    invoiceItems,
+    discountAmount,
+    notes,
+    isConsumerFinal,
+    useSimpleInvoice,
+    simpleSubtotal,
+    simpleDiscount,
+    paymentMethod,
+  ])
 
   useEffect(() => {
     loadData()
@@ -79,7 +145,7 @@ export default function SalesPage() {
     const product = products.find(p => p.barcode === barcodeSearch)
     if (product) {
       setItemProduct(product.id.toString())
-      setItemQuantity('1')
+      setItemQuantity('')
       setBarcodeSearch('')
     }
   }, [barcodeSearch])
@@ -107,7 +173,11 @@ export default function SalesPage() {
     const product = products.find(p => p.id === parseInt(itemProduct))
     if (!product) return
 
-    const quantity = parseInt(itemQuantity)
+    const quantity = Number(itemQuantity)
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      setError('La cantidad debe ser un número entero mayor que cero')
+      return
+    }
     const unitPrice = product.price || 0
     const discountValue = (unitPrice * quantity * itemDiscount) / 100
     const subtotal = unitPrice * quantity - discountValue
@@ -129,7 +199,7 @@ export default function SalesPage() {
 
     setItemProduct('')
     setItemQuantity('')
-    setItemDiscount(0)
+    setItemDiscount('')
   }
 
   const handleProductSelect = (e) => {
@@ -148,10 +218,7 @@ export default function SalesPage() {
       )
     } else {
       const unitPrice = product.price || 0
-      const quantity = 1
-      const subtotal = unitPrice * quantity
-      const taxAmount = (subtotal * 19) / 100
-      const lineTotal = subtotal + taxAmount
+      const quantity = ''
 
       setInvoiceItems([
         ...invoiceItems,
@@ -162,7 +229,7 @@ export default function SalesPage() {
           unit_price: unitPrice,
           discount_percentage: 0,
           tax_percentage: 19,
-          line_total: lineTotal,
+          line_total: 0,
         },
       ])
     }
@@ -184,12 +251,24 @@ export default function SalesPage() {
   }
 
   const updateInvoiceItemQuantity = (index, newQuantity) => {
+    const updatedItems = [...invoiceItems]
+
+    if (newQuantity === '') {
+      updatedItems[index].quantity = ''
+      updatedItems[index].line_total = 0
+      setInvoiceItems(updatedItems)
+      return
+    }
+
+    newQuantity = Number(newQuantity)
+
+    if (!Number.isInteger(newQuantity)) return
+
     if (newQuantity < 1) {
       removeInvoiceItem(index)
       return
     }
 
-    const updatedItems = [...invoiceItems]
     const item = updatedItems[index]
     
     item.quantity = newQuantity
@@ -206,12 +285,16 @@ export default function SalesPage() {
 
   const calculateTotals = () => {
     if (useSimpleInvoice) {
-      const subtotal = Math.max(0, parseFloat(simpleSubtotal) || 0) - Math.max(0, parseFloat(simpleDiscount) || 0)
+      const grossSubtotal = Math.max(0, parseFloat(simpleSubtotal) || 0)
+      const discount = Math.min(grossSubtotal, Math.max(0, parseFloat(simpleDiscount) || 0))
+      const subtotal = grossSubtotal - discount
       const total = subtotal
       return { subtotal, taxAmount: 0, total }
     }
 
-    const subtotal = invoiceItems.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0) - discountAmount
+    const grossSubtotal = invoiceItems.reduce((sum, item) => sum + (item.unit_price * (parseInt(item.quantity, 10) || 0)), 0)
+    const discount = Math.min(grossSubtotal, Math.max(0, parseFloat(discountAmount) || 0))
+    const subtotal = grossSubtotal - discount
     const total = subtotal
 
     return { subtotal, taxAmount: 0, total }
@@ -235,6 +318,11 @@ export default function SalesPage() {
 
     if (!useSimpleInvoice && invoiceItems.length === 0) {
       setError('Añade al menos un producto o usa Factura Simple')
+      return
+    }
+
+    if (!useSimpleInvoice && invoiceItems.some(item => !Number.isInteger(Number(item.quantity)) || Number(item.quantity) < 1)) {
+      setError('Ingresa una cantidad entera para cada producto')
       return
     }
 
@@ -271,15 +359,16 @@ export default function SalesPage() {
   }
 
   const resetForm = () => {
+    localStorage.removeItem(draftStorageKey)
     setShowForm(false)
     setSelectedClient('')
     setInvoiceItems([])
-    setDiscountAmount(0)
+    setDiscountAmount('')
     setNotes('')
     setIsConsumerFinal(false)
     setUseSimpleInvoice(false)
-    setSimpleSubtotal(0)
-    setSimpleDiscount(0)
+    setSimpleSubtotal('')
+    setSimpleDiscount('')
     setPaymentMethod('cash')
   }
 
@@ -746,23 +835,16 @@ export default function SalesPage() {
                       <tr key={idx}>
                         <td className="font-bold text-white">{item.product_name}</td>
                         <td className="text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => updateInvoiceItemQuantity(idx, item.quantity - 1)}
-                              className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold flex items-center justify-center"
-                            >
-                              -
-                            </button>
-                            <span className="font-bold font-mono text-sm w-6 text-center">{item.quantity}</span>
-                            <button
-                              type="button"
-                              onClick={() => updateInvoiceItemQuantity(idx, item.quantity + 1)}
-                              className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold flex items-center justify-center"
-                            >
-                              +
-                            </button>
-                          </div>
+                          <input
+                            type="number"
+                            min="1"
+                            step="1"
+                            inputMode="numeric"
+                            value={item.quantity}
+                            onChange={(e) => updateInvoiceItemQuantity(idx, e.target.value)}
+                            className="quantity-input w-20 text-center font-mono"
+                            aria-label={`Cantidad de ${item.product_name}`}
+                          />
                         </td>
                         <td className="text-right font-mono">${item.unit_price?.toFixed(2)}</td>
                         <td className="text-right font-mono font-bold text-[var(--accent-orange-light)]">
@@ -802,6 +884,21 @@ export default function SalesPage() {
                   <option value="transfer">Transferencia</option>
                 </select>
               </div>
+              {!useSimpleInvoice && (
+                <div className="form-group font-sans mb-4">
+                  <label htmlFor="invoice-discount">Descuento especial ($)</label>
+                  <input
+                    id="invoice-discount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    inputMode="decimal"
+                    value={discountAmount}
+                    onChange={(e) => setDiscountAmount(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+              )}
               <div className="flex justify-between text-[var(--text-secondary)]">
                 <span>Subtotal Neto:</span>
                 <span className="font-bold text-white">${subtotal.toFixed(2)}</span>
