@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="FacturaPro favicon">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ff9f0a"/>
+      <stop offset="100%" stop-color="#ff6a00"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#111827"/>
+  <rect x="6" y="6" width="52" height="52" rx="14" fill="url(#bg)"/>
+  <path d="M21 18h18c3.3 0 6 2.7 6 6v19c0 3.3-2.7 6-6 6H21c-3.3 0-6-2.7-6-6V24c0-3.3 2.7-6 6-6zm0 0v8h24v-8M20 28h24M20 36h17M20 44h11" fill="none" stroke="#fff7ed" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M44 22h4v4h-4zm0 10h4v4h-4zm0 10h4v4h-4z" fill="#fff7ed"/>
+</svg>
