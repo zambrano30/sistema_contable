@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getTotalSales, getInvoiceStats, getAllInvoices } from '../services/invoicesService'
+import { getTotalSales, getInvoiceStats, getAllInvoices, getMonthlyBalanceData } from '../services/invoicesService'
 import { getAllClients } from '../services/clientsService'
 import { getAllExpenses } from '../services/expensesService'
 
@@ -9,6 +9,7 @@ export default function DashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
+  const [monthlyBalance, setMonthlyBalance] = useState([])
   const [stats, setStats] = useState({
     totalSales: 0,
     monthlyGrowth: 0,
@@ -30,14 +31,23 @@ export default function DashboardPage() {
       let invoiceStatsResult
       let clientsResult
       let recentInvoicesResult
+      let monthlyBalanceResult
+
+      const today = new Date()
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
+      const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0)
 
       salesResult = await getTotalSales('month')
       invoiceStatsResult = await getInvoiceStats()
       clientsResult = await getAllClients()
       recentInvoicesResult = await getAllInvoices()
+      monthlyBalanceResult = await getMonthlyBalanceData(6)
 
-      const expensesResult = await getAllExpenses()
-      const totalExpenses = expensesResult.ok 
+      const expensesResult = await getAllExpenses({
+        startDate: monthStart.toISOString().split('T')[0],
+        endDate: monthEnd.toISOString().split('T')[0],
+      })
+      const totalExpenses = expensesResult.ok
         ? (expensesResult.data || []).reduce((sum, exp) => sum + (exp.amount || 0), 0)
         : 0
 
@@ -56,6 +66,10 @@ export default function DashboardPage() {
         })
       }
 
+      if (monthlyBalanceResult.ok) {
+        setMonthlyBalance(monthlyBalanceResult.data || [])
+      }
+
     } catch (error) {
       console.error('Error loading dashboard data:', error)
     } finally {
@@ -70,6 +84,32 @@ export default function DashboardPage() {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(value)
+  }
+
+  const formatChartCurrency = (value) => {
+    const abs = Math.abs(value)
+
+    if (abs >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`
+    }
+
+    if (abs >= 1000) {
+      return `$${(value / 1000).toFixed(1)}K`
+    }
+
+    return `$${Number(value).toLocaleString('es-CO', { maximumFractionDigits: 0 })}`
+  }
+
+  const maxMonthlyValue = Math.max(
+    1,
+    ...monthlyBalance.map((item) => Math.max(item.sales, item.expenses, Math.abs(item.balance), 1))
+  )
+
+  const formatMonthLabel = (month) => {
+    if (!month) return ''
+    const [year, monthNumber] = month.split('-')
+    const date = new Date(Number(year), Number(monthNumber) - 1, 1)
+    return date.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' })
   }
 
   return (
@@ -208,6 +248,49 @@ export default function DashboardPage() {
       </section>
 
       <div className="grid grid-cols-1 gap-6">
+        <section className="card">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="text-lg font-extrabold m-0 text-[var(--text-primary)]">Balance mensual</h3>
+              <p className="text-xs text-[var(--text-secondary)] mt-1">Ventas, gastos y utilidad por mes</p>
+            </div>
+          </div>
+
+          {monthlyBalance.length > 0 ? (
+            <div className="grid grid-cols-6 gap-3 items-end h-52">
+              {monthlyBalance.map((item) => {
+                const salesHeight = Math.max((item.sales / maxMonthlyValue) * 100, 8)
+                const expensesHeight = Math.max((item.expenses / maxMonthlyValue) * 100, 8)
+
+                return (
+                  <div key={item.month} className="flex flex-col items-center gap-2 h-full justify-end">
+                    <div className="flex items-end justify-center gap-1 h-36 w-full">
+                      <div
+                        className="w-1/2 rounded-t-xl bg-emerald-500/80 shadow-[0_0_16px_rgba(16,185,129,0.35)]"
+                        title={`Ventas ${formatCurrency(item.sales)}`}
+                        style={{ height: `${salesHeight}%` }}
+                      />
+                      <div
+                        className="w-1/2 rounded-t-xl bg-red-500/80 shadow-[0_0_16px_rgba(239,68,68,0.35)]"
+                        title={`Gastos ${formatCurrency(item.expenses)}`}
+                        style={{ height: `${expensesHeight}%` }}
+                      />
+                    </div>
+                    <div className="text-center">
+                      <div className="text-[10px] font-bold text-[var(--text-secondary)]">{formatMonthLabel(item.month)}</div>
+                      <div className={`text-[10px] font-bold ${item.balance >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+                        {formatCurrency(item.balance)}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-[var(--text-secondary)] text-sm">Sin datos del balance mensual</div>
+          )}
+        </section>
+
         {/* Recent Activity List */}
         <section className="card flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">

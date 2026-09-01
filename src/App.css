@@ -156,6 +156,10 @@ html, body {
   .sidebar-collapsed .main-content {
     margin-left: 72px;
   }
+
+  .sidebar-hidden .main-content {
+    margin-left: 0 !important;
+  }
 }
 
 /* ============ SIDEBAR & NAVIGATION ============ */
@@ -172,9 +176,19 @@ html, body {
   display: flex;
   flex-direction: column;
   z-index: 40;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+.sidebar.hidden {
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  min-width: 0;
+  border-right: none;
+  overflow: hidden;
+  transform: translateX(-100%);
 }
 
 .sidebar-toggle {
@@ -429,6 +443,37 @@ html, body {
   align-items: center;
   gap: 0.6rem;
   letter-spacing: -0.02em;
+}
+
+.sales-summary-shell {
+  position: sticky;
+  top: 6rem;
+  align-self: flex-start;
+  width: 100%;
+}
+
+.sales-summary-card {
+  width: 100%;
+  height: auto;
+  max-height: none;
+  overflow: hidden;
+}
+
+@media (min-width: 1280px) {
+  .sales-summary-shell {
+    width: 360px;
+  }
+
+  .sales-summary-card {
+    height: calc(100vh - 8rem);
+    max-height: calc(100vh - 8rem);
+  }
+}
+
+@media (max-width: 1279px) {
+  .sales-summary-shell {
+    position: static;
+  }
 }
 
 .page-subtitle {
@@ -1012,18 +1057,20 @@ textarea:focus {
   font-size: 1rem;
   font-weight: 700;
   text-align: center;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.quantity-input::-webkit-outer-spin-button,
+.quantity-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .quantity-input:focus {
   background: rgba(255, 159, 10, 0.16);
   border-color: var(--accent-orange);
   box-shadow: 0 0 0 3px rgba(255, 159, 10, 0.2);
-}
-
-.quantity-input::-webkit-inner-spin-button,
-.quantity-input::-webkit-outer-spin-button {
-  opacity: 1;
-  height: 1.25rem;
 }
 
 @media (max-width: 639px) {

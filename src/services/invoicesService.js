@@ -150,6 +150,75 @@ export async function getMonthlySalesData(months = 12) {
   }
 }
 
+export async function getMonthlyBalanceData(months = 6) {
+  if (!isSupabaseConfigured || !supabase) {
+    return {
+      ok: false,
+      error: 'Missing Supabase environment variables.',
+    }
+  }
+
+  const now = new Date()
+  const startMonthIndex = 7 // Agosto
+  const startYear = now.getMonth() < startMonthIndex ? now.getFullYear() - 1 : now.getFullYear()
+  const startDate = new Date(startYear, startMonthIndex, 1)
+  const endDate = new Date(now.getFullYear(), now.getMonth(), 1)
+  const monthlyData = {}
+
+  let cursor = new Date(startDate)
+  while (cursor <= endDate) {
+    const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
+    monthlyData[key] = {
+      month: key,
+      sales: 0,
+      expenses: 0,
+      balance: 0,
+    }
+    cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1)
+  }
+
+  const { data: invoicesData, error: invoicesError } = await supabase
+    .from('invoices')
+    .select('invoice_date, total_amount')
+    .order('invoice_date', { ascending: true })
+
+  const { data: expensesData, error: expensesError } = await supabase
+    .from('expenses')
+    .select('expense_date, amount')
+    .eq('is_active', true)
+    .order('expense_date', { ascending: true })
+
+  if (invoicesError) {
+    return { ok: false, error: invoicesError.message }
+  }
+
+  if (expensesError) {
+    return { ok: false, error: expensesError.message }
+  }
+
+  invoicesData?.forEach((invoice) => {
+    const key = invoice.invoice_date?.substring(0, 7)
+    if (key && monthlyData[key]) {
+      monthlyData[key].sales += Number(invoice.total_amount || 0)
+    }
+  })
+
+  expensesData?.forEach((expense) => {
+    const key = expense.expense_date?.substring(0, 7)
+    if (key && monthlyData[key]) {
+      monthlyData[key].expenses += Number(expense.amount || 0)
+    }
+  })
+
+  return {
+    ok: true,
+    data: Object.values(monthlyData).map((item) => ({
+      ...item,
+      balance: Number((item.sales - item.expenses).toFixed(2)),
+    })),
+  }
+}
+
 /**
  * Get invoice statistics
  * @returns {Promise<{ok: boolean, data?: {total: number, draft: number, sent: number, cancelled: number}, error?: string}>}

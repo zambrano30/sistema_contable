@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
-export function Sidebar({ collapsed, onToggle }) {
+export function Sidebar({ collapsed, hidden, onToggle, onToggleHidden }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout } = useAuth()
@@ -106,6 +106,15 @@ export function Sidebar({ collapsed, onToggle }) {
       {/* Top Glass Header */}
       <header className="top-header">
         <div className="flex items-center gap-3">
+          <button
+            className="hidden lg:flex text-white hover:text-[var(--accent-orange)] text-2xl cursor-pointer bg-none border-none p-1 items-center"
+            onClick={onToggleHidden}
+            aria-label={hidden ? 'Mostrar menú' : 'Ocultar menú'}
+            title={hidden ? 'Mostrar menú' : 'Ocultar menú'}
+          >
+            <span className="material-symbols-outlined">{hidden ? 'menu_open' : 'menu'}</span>
+          </button>
+
           <button 
             className="lg:hidden text-white hover:text-[var(--accent-orange)] text-2xl cursor-pointer bg-none border-none p-1 flex items-center"
             onClick={() => setIsOpen(!isOpen)}
@@ -160,7 +169,7 @@ export function Sidebar({ collapsed, onToggle }) {
       {isOpen && <div className="sidebar-overlay" onClick={() => setIsOpen(false)}></div>}
 
       {/* Desktop & Mobile Drawer Sidebar */}
-      <aside className={`sidebar ${isOpen ? 'open' : ''} ${collapsed ? 'collapsed' : ''}`}>
+      <aside className={`sidebar ${isOpen ? 'open' : ''} ${collapsed ? 'collapsed' : ''} ${hidden ? 'hidden' : ''}`}>
         <div className="sidebar-header">
           <h2>
             <span className="material-symbols-outlined text-[var(--accent-orange)]">shield_person</span>

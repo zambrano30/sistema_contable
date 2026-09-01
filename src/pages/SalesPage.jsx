@@ -28,7 +28,7 @@ export default function SalesPage() {
 
   // Item form
   const [itemProduct, setItemProduct] = useState('')
-  const [itemQuantity, setItemQuantity] = useState('')
+  const [itemQuantity, setItemQuantity] = useState('1')
   const [itemDiscount, setItemDiscount] = useState('')
 
   // Search states
@@ -145,7 +145,7 @@ export default function SalesPage() {
     const product = products.find(p => p.barcode === barcodeSearch)
     if (product) {
       setItemProduct(product.id.toString())
-      setItemQuantity('')
+      setItemQuantity('1')
       setBarcodeSearch('')
     }
   }, [barcodeSearch])
@@ -198,7 +198,7 @@ export default function SalesPage() {
     ])
 
     setItemProduct('')
-    setItemQuantity('')
+    setItemQuantity('1')
     setItemDiscount('')
   }
 
@@ -218,7 +218,7 @@ export default function SalesPage() {
       )
     } else {
       const unitPrice = product.price || 0
-      const quantity = ''
+      const quantity = 1
 
       setInvoiceItems([
         ...invoiceItems,
@@ -387,25 +387,7 @@ export default function SalesPage() {
     <div className="page-container">
       {/* Header */}
       <header className="page-header">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
-            <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">point_of_sale</span>
-            <span>Facturación Electrónica POS</span>
-          </h1>
-          <p className="page-subtitle">Emisión inmediata de facturas de venta y comprobantes SRI</p>
-        </div>
-
-        {user?.role !== 'Vendedor' && (
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="btn-primary"
-            >
-              <span className="material-symbols-outlined">{showForm ? 'close' : 'add'}</span>
-              <span>{showForm ? 'Cerrar Formulario' : 'Nueva Factura'}</span>
-            </button>
-          </div>
-        )}
+        <div />
       </header>
 
       {error && (
@@ -416,9 +398,9 @@ export default function SalesPage() {
       )}
 
       {/* Modern POS Billing Interface Container */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.8fr)_360px] xl:items-start">
         {/* Left Column: Client & Product Selection Panel */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 min-w-0">
           {/* Client Selection Card */}
           <div className="card">
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-color)]">
@@ -869,14 +851,14 @@ export default function SalesPage() {
         </div>
 
         {/* Right Column: Checkout & Summary Sidebar */}
-        <div className="space-y-6">
-          <div className="card bg-gradient-to-b from-[#182030] to-[#121721] border border-white/10">
+        <div className="sales-summary-shell w-full">
+          <div className="sales-summary-card card bg-gradient-to-b from-[#182030] to-[#121721] border border-white/10 flex flex-col justify-between w-full">
             <h3 className="text-lg font-extrabold m-0 mb-4 pb-3 border-b border-[var(--border-color)] text-[var(--text-primary)] flex items-center justify-between">
               <span>Resumen de Cobro</span>
               <span className="material-symbols-outlined text-[var(--accent-orange)]">receipt_long</span>
             </h3>
 
-            <div className="space-y-3 font-mono text-sm">
+            <div className="space-y-3 font-mono text-sm flex-1 overflow-hidden">
               <div className="form-group font-sans mb-4">
                 <label htmlFor="payment-method">Método de pago</label>
                 <select id="payment-method" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
