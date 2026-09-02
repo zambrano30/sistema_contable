@@ -4,8 +4,6 @@ import { useAuth } from '../contexts/AuthContext'
 import { getTotalSales, getInvoiceStats, getAllInvoices, getMonthlyBalanceData } from '../services/invoicesService'
 import { getAllClients } from '../services/clientsService'
 import { getAllExpenses } from '../services/expensesService'
-import { SystemSkillsCard } from '../components/SystemSkillsCard'
-import { SkillBadge } from '../components/SkillBadge'
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -119,14 +117,11 @@ export default function DashboardPage() {
       {/* Page Header */}
       <header className="page-header">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2 m-0 font-heading">
-              <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">grid_view</span>
-              <span>Panel Principal</span>
-            </h1>
-            <SkillBadge label="Skills Active" variant="pro" size="sm" pulse={true} icon="auto_awesome" />
-          </div>
-          <p className="page-subtitle">Resumen general de facturación, ingresos, clientes y habilidades del sistema</p>
+          <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2 m-0 font-heading">
+            <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">grid_view</span>
+            <span>Panel Principal</span>
+          </h1>
+          <p className="page-subtitle">Resumen general de facturación, ingresos y clientes</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -139,9 +134,6 @@ export default function DashboardPage() {
           </button>
         </div>
       </header>
-
-      {/* System Skills & Capabilities Section */}
-      <SystemSkillsCard />
 
       {/* Hero / Quick Stats Bento Grid */}
       <section className="bento-grid">
