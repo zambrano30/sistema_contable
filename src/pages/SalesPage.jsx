@@ -4,6 +4,7 @@ import { getAllClients } from '../services/clientsService'
 import { createInvoice } from '../services/invoicesService'
 import { BarcodeScanner } from '../components/BarcodeScanner'
 import { useAuth } from '../contexts/AuthContext'
+import { SkillBadge } from '../components/SkillBadge'
 
 export default function SalesPage() {
   const { user } = useAuth()
@@ -387,7 +388,21 @@ export default function SalesPage() {
     <div className="page-container">
       {/* Header */}
       <header className="page-header">
-        <div />
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2 m-0 font-heading">
+              <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">point_of_sale</span>
+              <span>Punto de Venta POS</span>
+            </h1>
+            <SkillBadge label="Ultra-Fast POS" variant="pro" size="sm" pulse={true} icon="bolt" />
+          </div>
+          <p className="page-subtitle">Emisión directa de facturas de venta, escaneo y cobro rápido</p>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <SkillBadge label="SRI Direct Sync" variant="sri" size="sm" icon="verified" />
+          <SkillBadge label="Scanner EAN/QR" variant="sync" size="sm" icon="qr_code_scanner" />
+        </div>
       </header>
 
       {error && (

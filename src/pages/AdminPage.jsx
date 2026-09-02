@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { createCookUser, getCookUsers, createVendorUser, getVendorUsers } from '../services/userService'
+import { SkillBadge } from '../components/SkillBadge'
 
 export default function AdminPage() {
   const { user } = useAuth()
@@ -158,20 +159,26 @@ export default function AdminPage() {
       {/* Header */}
       <header className="page-header">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
-            <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">admin_panel_settings</span>
-            <span>Administración del Sistema</span>
-          </h1>
-          <p className="page-subtitle">Gestión de accesos, roles de usuarios y personal de caja/cocina</p>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2 m-0 font-heading">
+              <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">admin_panel_settings</span>
+              <span>Administración del Sistema</span>
+            </h1>
+            <SkillBadge label="RLS Security 100%" variant="sri" size="sm" pulse={true} icon="shield" />
+          </div>
+          <p className="page-subtitle">Gestión de accesos, roles de usuarios, permisos RLS y personal de caja/cocina</p>
         </div>
 
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="btn-primary"
-        >
-          <span className="material-symbols-outlined">person_add</span>
-          <span>{activeTab === 'cooks' ? 'Nuevo Cocinero' : 'Nuevo Vendedor'}</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <SkillBadge label="Supabase Auth" variant="sync" size="sm" icon="lock" />
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="btn-primary"
+          >
+            <span className="material-symbols-outlined">person_add</span>
+            <span>{activeTab === 'cooks' ? 'Nuevo Cocinero' : 'Nuevo Vendedor'}</span>
+          </button>
+        </div>
       </header>
 
       {error && (

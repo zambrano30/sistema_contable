@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-:root {
+:root, [data-theme="dark"] {
   --background: #0b0e14;
   --surface: #121721;
   --surface-container-lowest: #080a0e;
@@ -43,6 +43,47 @@
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-heading: 'Outfit', 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+}
+
+[data-theme="light"] {
+  --background: #f4f6f9;
+  --surface: #ffffff;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f8fafc;
+  --surface-container: #f1f5f9;
+  --surface-container-high: #e2e8f0;
+  --surface-container-highest: #cbd5e1;
+  
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --glass-border-hover: rgba(234, 88, 12, 0.35);
+  
+  --primary: #ea580c;
+  --primary-hover: #f97316;
+  --primary-container: #c2410c;
+  --on-primary: #ffffff;
+  
+  --secondary: #2563eb;
+  --secondary-container: #1d4ed8;
+  --on-secondary: #ffffff;
+  
+  --tertiary: #0284c7;
+  
+  --success: #16a34a;
+  --success-bg: rgba(22, 163, 74, 0.12);
+  --success-border: rgba(22, 163, 74, 0.25);
+  
+  --warning: #d97706;
+  --warning-bg: rgba(217, 119, 6, 0.12);
+  
+  --danger: #dc2626;
+  --danger-bg: rgba(220, 38, 38, 0.12);
+  --danger-border: rgba(220, 38, 38, 0.25);
+  
+  --on-surface: #0f172a;
+  --on-surface-variant: #475569;
+  --outline: #cbd5e1;
+  --outline-variant: #e2e8f0;
 }
 
 body {

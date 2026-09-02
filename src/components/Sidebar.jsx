@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { SkillBadge } from './SkillBadge'
+import { ThemeToggle } from './ThemeToggle'
 
 export function Sidebar({ collapsed, hidden, onToggle, onToggleHidden }) {
   const navigate = useNavigate()
@@ -64,13 +66,13 @@ export function Sidebar({ collapsed, hidden, onToggle, onToggleHidden }) {
   }
 
   const baseMenuItems = [
-    { label: 'Ventas', icon: 'receipt_long', path: '/sales' },
-    { label: 'Facturas', icon: 'description', path: '/invoices' },
+    { label: 'Ventas', icon: 'receipt_long', path: '/sales', skill: 'POS' },
+    { label: 'Facturas', icon: 'description', path: '/invoices', skill: 'SRI' },
     { label: 'Clientes', icon: 'group', path: '/clients' },
-    { label: 'Inventario', icon: 'warehouse', path: '/inventory' },
-    { label: 'Cocina', icon: 'restaurant_menu', path: '/kitchen' },
+    { label: 'Inventario', icon: 'warehouse', path: '/inventory', skill: 'Stock' },
+    { label: 'Cocina', icon: 'restaurant_menu', path: '/kitchen', skill: 'KDS' },
     { label: 'Gastos', icon: 'trending_down', path: '/expenses' },
-    { label: 'Cierre de caja', icon: 'point_of_sale', path: '/cash-closing' },
+    { label: 'Cierre de caja', icon: 'point_of_sale', path: '/cash-closing', skill: 'Auto' },
     { label: 'Contar monedas', icon: 'toll', path: '/coin-counter' },
   ]
 
@@ -78,19 +80,19 @@ export function Sidebar({ collapsed, hidden, onToggle, onToggleHidden }) {
 
   if (user?.role === 'Cocinero') {
     menuItems = [
-      { label: 'Cocina', icon: 'restaurant_menu', path: '/kitchen' },
+      { label: 'Cocina', icon: 'restaurant_menu', path: '/kitchen', skill: 'KDS' },
     ]
   } else if (user?.role === 'Vendedor') {
     menuItems = [
-      { label: 'Ventas', icon: 'receipt_long', path: '/sales' },
-      { label: 'Facturas', icon: 'description', path: '/invoices' },
+      { label: 'Ventas', icon: 'receipt_long', path: '/sales', skill: 'POS' },
+      { label: 'Facturas', icon: 'description', path: '/invoices', skill: 'SRI' },
       { label: 'Clientes', icon: 'group', path: '/clients' },
     ]
   } else if (user?.role === 'Administrador') {
     menuItems = [
       ...baseMenuItems,
-      { label: 'Dashboard', icon: 'dashboard', path: '/dashboard' },
-      { label: 'Administración', icon: 'admin_panel_settings', path: '/admin' },
+      { label: 'Dashboard', icon: 'dashboard', path: '/dashboard', skill: 'Pro' },
+      { label: 'Administración', icon: 'admin_panel_settings', path: '/admin', skill: 'Admin' },
     ]
   }
 
@@ -123,15 +125,23 @@ export function Sidebar({ collapsed, hidden, onToggle, onToggleHidden }) {
             <span className="material-symbols-outlined">menu</span>
           </button>
           
-          <div className="header-brand cursor-pointer" onClick={() => navigate('/sales')}>
+          <div className="header-brand cursor-pointer flex items-center gap-2" onClick={() => navigate('/sales')}>
             <div className="header-logo-icon">
               <span className="material-symbols-outlined">receipt_long</span>
             </div>
-            <span className="hidden sm:inline font-bold tracking-tight text-[var(--text-primary)]">FacturaPro</span>
+            <span className="hidden sm:inline font-bold tracking-tight text-[var(--text-primary)] font-heading">FacturaPro</span>
+          </div>
+
+          {/* System Skills Header Badge */}
+          <div className="hidden lg:flex items-center gap-2 ml-4">
+            <SkillBadge label="SRI Conectado" variant="sri" size="sm" pulse={true} icon="verified" />
+            <SkillBadge label="DB Supabase" variant="sync" size="sm" icon="cloud_done" />
           </div>
         </div>
 
         <div className="header-user flex items-center gap-3">
+          <ThemeToggle />
+
           <div className="hidden md:flex flex-col text-right">
             <span className="text-xs font-semibold text-[var(--text-primary)]">{user?.email}</span>
             <span className="user-badge self-end mt-0.5">{displayRole}</span>
@@ -195,14 +205,21 @@ export function Sidebar({ collapsed, hidden, onToggle, onToggleHidden }) {
           {menuItems.map((item) => (
             <button
               key={item.path}
-              className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
+              className={`nav-item ${isActive(item.path) ? 'active' : ''} justify-between`}
               onClick={() => {
                 navigate(item.path)
                 setIsOpen(false)
               }}
             >
-              <span className="material-symbols-outlined nav-icon">{item.icon}</span>
-              <span className="nav-label">{item.label}</span>
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined nav-icon">{item.icon}</span>
+                <span className="nav-label">{item.label}</span>
+              </div>
+              {item.skill && !collapsed && (
+                <span className="nav-label">
+                  <SkillBadge label={item.skill} variant={item.skill === 'SRI' ? 'sri' : 'pro'} size="sm" />
+                </span>
+              )}
             </button>
           ))}
         </nav>
