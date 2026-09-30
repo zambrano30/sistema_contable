@@ -57,7 +57,7 @@ export async function signUp(userData) {
   }
 
   try {
-    // Paso 1: Crear en Supabase Auth CON metadata (cedula, nombre, etc)
+    // Paso 1: Crear en Supabase Auth CON metadata
     const { data, error } = await supabase.auth.signUp({
       email: email,
       password: userData.password,
@@ -80,12 +80,13 @@ export async function signUp(userData) {
       return { ok: false, error: 'No se pudo crear la cuenta' }
     }
 
-    // Paso 2: Intentar insertar en tabla users como fallback (en caso de que el trigger no funcione)
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // Paso 2: Insertar en tabla users DIRECTAMENTE (NO depender del trigger)
+    // Esperar un poco para que se cree el usuario en auth
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
     const { error: userInsertError } = await supabase
       .from('users')
-      .insert({
+      .upsert({
         id: data.user.id,
         cedula: userData.cedula.trim(),
         nombre: nombre,
@@ -95,13 +96,15 @@ export async function signUp(userData) {
         cargo: sanitizeInput(userData.cargo || '') || null,
         rol: 'Vendedor',
         is_active: true,
-      })
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' })
 
     if (userInsertError) {
-      // Si ya existe (el trigger lo insertó), no es error
-      if (!userInsertError.message.includes('duplicate')) {
-        console.warn('Warning creating user record:', userInsertError.message)
-      }
+      console.warn('Warning al guardar usuario:', userInsertError.message)
+      // No fallar - el usuario se registró en auth exitosamente
+    } else {
+      console.log('✅ Usuario guardado en tabla users:', userData.cedula)
     }
 
     return { ok: true, data }
