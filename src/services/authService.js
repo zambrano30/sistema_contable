@@ -175,7 +175,7 @@ export async function signUp(userData) {
  * @param {string} password - User password
  * @returns {Promise<{ok: boolean, data?: Object, error?: string}>}
  */
-export async function signIn(cedula, password) {
+export async function signIn(email, password) {
   if (!isSupabaseConfigured || !supabase) {
     return {
       ok: false,
@@ -183,9 +183,9 @@ export async function signIn(cedula, password) {
     }
   }
 
-  // Validar cédula
-  if (!validateCedula(cedula)) {
-    return { ok: false, error: 'Cédula inválida. Debe tener entre 6 y 20 números.' }
+  // Validar email
+  if (!email || !email.includes('@')) {
+    return { ok: false, error: 'Email inválido.' }
   }
 
   // Validar contraseña
@@ -194,48 +194,18 @@ export async function signIn(cedula, password) {
   }
 
   try {
-    const cedulaTrim = cedula.trim()
-    console.log('🔍 Buscando usuario con cédula:', cedulaTrim)
+    const emailTrim = email.trim()
+    console.log('🔍 Iniciando login con email:', emailTrim)
 
-    // PASO 1: Buscar el usuario por cedula
-    let { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id, email, cedula, nombre')
-      .eq('cedula', cedulaTrim)
-      .maybeSingle()
-
-    // Si no encuentra exacto, intenta búsqueda más flexible
-    if (!userData) {
-      console.log('⚠️ No encontrado exacto. Intentando búsqueda flexible...')
-      const { data: flexibleResult } = await supabase
-        .from('users')
-        .select('id, email, cedula, nombre')
-        .ilike('cedula', `%${cedulaTrim}%`)
-        .maybeSingle()
-      
-      userData = flexibleResult
-    }
-
-    if (!userData?.email) {
-      console.error('❌ Usuario no encontrado con cédula:', cedulaTrim)
-      console.log('💡 Consulta la base de datos para verificar las cédulas disponibles')
-      return { 
-        ok: false, 
-        error: 'Usuario no encontrado. Verifica tu cédula o regístrate primero.' 
-      }
-    }
-
-    console.log('✅ Usuario encontrado:', userData.nombre, '-', userData.email)
-
-    // PASO 2: Usar el email del usuario para autenticarse
+    // Usar el email directamente para autenticarse
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: userData.email,
+      email: emailTrim,
       password: password,
     })
 
     if (authError) {
       console.error('❌ Error de autenticación:', authError.message)
-      return { ok: false, error: 'Contraseña incorrecta.' }
+      return { ok: false, error: 'Email o contraseña incorrecta.' }
     }
 
     if (!authData?.user) {
@@ -243,7 +213,7 @@ export async function signIn(cedula, password) {
       return { ok: false, error: 'Error al iniciar sesión. Intenta de nuevo.' }
     }
 
-    console.log('✅ Login exitoso para:', userData.nombre)
+    console.log('✅ Login exitoso para:', emailTrim)
     return { ok: true, data: authData }
   } catch (err) {
     console.error('❌ SignIn error:', err)

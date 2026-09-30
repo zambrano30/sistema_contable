@@ -4,10 +4,11 @@ import { signIn, signUp, validateCedula, sanitizeInput } from '../services/authS
 
 export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false)
-  const [cedula, setCedula] = useState('')
+  const [loginEmail, setLoginEmail] = useState('')
   const [password, setPassword] = useState('')
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
+  const [cedula, setCedula] = useState('')
   const [telefono, setTelefono] = useState('')
   const [empresa, setEmpresa] = useState('')
   const [cargo, setCargo] = useState('')
@@ -61,8 +62,8 @@ export default function LoginPage() {
           setError(result.error || 'Error al registrarse')
         }
       } else {
-        // Login
-        const result = await signIn(cedula.trim(), password)
+        // Login con email
+        const result = await signIn(loginEmail.trim(), password)
         if (result.ok) {
           navigate('/sales')
         } else {
@@ -105,16 +106,20 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           {/* Login Fields */}
-          <div className="form-group">
-            <label htmlFor="cedula">Usuario (Cédula)</label>
-            <input
-              id="cedula"
-              type="text"
-              value={cedula}
-              onChange={(e) => setCedula(e.target.value)}
-              required
-            />
-          </div>
+          {!isSignUp && (
+            <>
+              <div className="form-group">
+                <label htmlFor="loginEmail">Email</label>
+                <input
+                  id="loginEmail"
+                  type="email"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </>
+          )}
 
           <div className="form-group">
             <label htmlFor="password">Contraseña</label>
@@ -130,6 +135,17 @@ export default function LoginPage() {
           {/* Registration Fields */}
           {isSignUp && (
             <>
+              <div className="form-group">
+                <label htmlFor="cedula-signup">Cédula</label>
+                <input
+                  id="cedula-signup"
+                  type="text"
+                  value={cedula}
+                  onChange={(e) => setCedula(e.target.value)}
+                  required
+                />
+              </div>
+
               <div className="form-group">
                 <label htmlFor="nombre">Nombre Completo</label>
                 <input
