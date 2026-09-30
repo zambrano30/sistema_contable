@@ -1,9 +1,13 @@
 import './App.css'
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { CompanyProvider, useCompany } from './contexts/CompanyContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { Layout } from './components/Layout'
+import { OfflineIndicator } from './hooks/useOffline'
+import { offlineDB } from './lib/offlineDB'
+import { syncManager } from './lib/syncManager'
 import LoginPage from './pages/LoginPage'
 import PasswordPage from './pages/PasswordPage'
 import DashboardPage from './pages/DashboardPage'
@@ -17,6 +21,10 @@ import AdminPage from './pages/AdminPage'
 import CashClosingPage from './pages/CashClosingPage'
 import CoinCounterPage from './pages/CoinCounterPage'
 import CompanySetupPage from './pages/CompanySetupPage'
+
+// Hacer accesibles globalmente para debugging
+window.offlineDB = offlineDB
+window.syncManager = syncManager
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -165,12 +173,27 @@ function AppContent() {
 }
 
 export default function App() {
+  useEffect(() => {
+    const initOffline = async () => {
+      try {
+        await offlineDB.init()
+        console.log('✅ Base de datos offline inicializada')
+        await syncManager.init()
+        console.log('✅ Sync Manager inicializado')
+      } catch (error) {
+        console.error('Error inicializando modo offline:', error)
+      }
+    }
+    initOffline()
+  }, [])
+
   return (
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
           <CompanyProvider>
             <AppContent />
+            <OfflineIndicator />
           </CompanyProvider>
         </AuthProvider>
       </ThemeProvider>

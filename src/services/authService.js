@@ -57,10 +57,19 @@ export async function signUp(userData) {
   }
 
   try {
-    // Paso 1: Crear en Supabase Auth (SIN metadata para evitar error 500)
+    // Paso 1: Crear en Supabase Auth CON metadata (cedula, nombre, etc)
     const { data, error } = await supabase.auth.signUp({
       email: email,
-      password: userData.password
+      password: userData.password,
+      options: {
+        data: {
+          cedula: userData.cedula.trim(),
+          nombre: nombre,
+          telefono: sanitizeInput(userData.telefono || '') || '',
+          empresa_nombre: sanitizeInput(userData.empresa_nombre || '') || '',
+          cargo: sanitizeInput(userData.cargo || '') || ''
+        }
+      }
     })
 
     if (error) {
@@ -71,7 +80,7 @@ export async function signUp(userData) {
       return { ok: false, error: 'No se pudo crear la cuenta' }
     }
 
-    // Paso 2: Insertar en tabla users con espera mínima
+    // Paso 2: Intentar insertar en tabla users como fallback (en caso de que el trigger no funcione)
     await new Promise(resolve => setTimeout(resolve, 500))
 
     const { error: userInsertError } = await supabase
@@ -88,9 +97,11 @@ export async function signUp(userData) {
         is_active: true,
       })
 
-    if (userInsertError && !userInsertError.message.includes('duplicate key')) {
-      console.error('Error creating user record:', userInsertError)
-      // No fallar - el usuario se registró en Auth exitosamente
+    if (userInsertError) {
+      // Si ya existe (el trigger lo insertó), no es error
+      if (!userInsertError.message.includes('duplicate')) {
+        console.warn('Warning creating user record:', userInsertError.message)
+      }
     }
 
     return { ok: true, data }
@@ -125,16 +136,37 @@ export async function signIn(cedula, password) {
   }
 
   try {
-    // Buscar el usuario por cedula para obtener su email
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('email')
-      .eq('cedula', cedula)
-      .single()
+    const cedulaLimpita = cedula.trim()
 
-    if (userError || !userData?.email) {
-      return { ok: false, error: 'Usuario no encontrado. Verifica tu cédula.' }
+    // Intentar buscar el usuario por cedula
+    let { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('email, id, cedula')
+      .eq('cedula', cedulaLimpita)
+      .maybeSingle()
+
+    // Si no encuentra por cédula exacta, intenta sin espacios o variaciones
+    if (!userData && userError?.code === 'PGRST116') {
+      // Intenta búsqueda más flexible (sin espacios)
+      const cedulaSinEspacios = cedulaLimpita.replace(/\s/g, '')
+      const { data: result2 } = await supabase
+        .from('users')
+        .select('email, id, cedula')
+        .ilike('cedula', `%${cedulaSinEspacios}%`)
+        .maybeSingle()
+      
+      userData = result2
     }
+
+    if (!userData?.email) {
+      console.error('Usuario no encontrado con cédula:', cedulaLimpita)
+      return { 
+        ok: false, 
+        error: 'Usuario no encontrado. Verifica tu cédula o regístrate.' 
+      }
+    }
+
+    console.log('Usuario encontrado:', userData.id, userData.cedula)
 
     // Usar el email real del usuario para autenticarse
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -143,13 +175,14 @@ export async function signIn(cedula, password) {
     })
 
     if (error) {
-      return { ok: false, error: error.message }
+      console.error('Auth error:', error.message)
+      return { ok: false, error: error.message || 'Contraseña incorrecta.' }
     }
 
     return { ok: true, data }
   } catch (err) {
-    // Supabase connection issue - service may be paused or unreachable
-    return { ok: false, error: 'No se pudo conectar con el servidor de Supabase.' }
+    console.error('SignIn error:', err)
+    return { ok: false, error: 'No se pudo conectar con el servidor. Intenta más tarde.' }
   }
 }
 

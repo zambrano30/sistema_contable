@@ -1,0 +1,23 @@
+{
+  "appId": "com.sistemascontable.facturacion",
+  "appName": "Sistema Contable",
+  "webDir": "dist",
+  "server": {
+    "url": "http://localhost:5173",
+    "cleartext": true
+  },
+  "ios": {
+    "contentInset": "always"
+  },
+  "android": {
+    "minWebViewVersion": 90,
+    "useLegacyBridge": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    },
+    "Network": {},
+    "FilesystemAPI": {}
+  }
+}
