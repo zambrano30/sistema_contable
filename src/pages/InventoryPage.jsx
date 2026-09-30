@@ -299,7 +299,7 @@ export default function InventoryPage() {
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex gap-2 sm:gap-3 border-b border-[var(--border-color)] pb-1 overflow-x-auto\">
+      <div className="flex gap-2 sm:gap-3 border-b border-[var(--border-color)] pb-1 overflow-x-auto">
         <button
           onClick={() => {
             setActiveTab('products')
