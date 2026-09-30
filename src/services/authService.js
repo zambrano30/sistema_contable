@@ -57,7 +57,10 @@ export async function signUp(userData) {
   }
 
   try {
-    // Paso 1: Crear en Supabase Auth CON metadata
+    console.log('📝 Iniciando signup para:', email)
+    console.log('Cédula:', userData.cedula.trim())
+    
+    // PASO 1: Crear en Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email: email,
       password: userData.password,
@@ -73,43 +76,95 @@ export async function signUp(userData) {
     })
 
     if (error) {
+      console.error('❌ Error en auth.signUp:', error)
       return { ok: false, error: error.message }
     }
 
     if (!data?.user?.id) {
+      console.error('❌ No user ID returned')
       return { ok: false, error: 'No se pudo crear la cuenta' }
     }
 
-    // Paso 2: Insertar en tabla users DIRECTAMENTE (NO depender del trigger)
-    // Esperar un poco para que se cree el usuario en auth
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    console.log('✅ Usuario creado en auth:', data.user.id)
 
-    const { error: userInsertError } = await supabase
+    // PASO 2: Insertar en tabla users DIRECTAMENTE
+    // Esperar a que el usuario exista en auth
+    let attempts = 0
+    let userExists = false
+    
+    while (attempts < 5 && !userExists) {
+      await new Promise(resolve => setTimeout(resolve, 500))
+      attempts++
+      
+      try {
+        // Verificar que el usuario existe
+        const { data: checkUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', data.user.id)
+          .maybeSingle()
+        
+        if (checkUser) {
+          userExists = true
+          console.log('✅ Usuario ya existe en tabla users (trigger funcionó)')
+          // Actualizar con la cédula correcta si no la tiene
+          if (!checkUser.cedula || checkUser.cedula.startsWith('TEMP-')) {
+            console.log('🔄 Actualizando cédula en usuario existente...')
+            await supabase
+              .from('users')
+              .update({ cedula: userData.cedula.trim() })
+              .eq('id', data.user.id)
+          }
+          break
+        }
+      } catch (e) {
+        console.log('⏳ Usuario aún no existe, reintentando... Intento', attempts)
+      }
+    }
+
+    // Si el usuario NO existe aún, insertarlo directamente
+    if (!userExists) {
+      console.log('🔧 Insertando usuario directamente...')
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: data.user.id,
+          cedula: userData.cedula.trim(),
+          nombre: nombre,
+          email: email,
+          telefono: sanitizeInput(userData.telefono || '') || null,
+          empresa_nombre: sanitizeInput(userData.empresa_nombre || '') || null,
+          cargo: sanitizeInput(userData.cargo || '') || null,
+          rol: 'Vendedor',
+          is_active: true
+        })
+
+      if (insertError) {
+        console.error('⚠️ Error al insertar usuario:', insertError.message)
+        // No fallar - el usuario se registró en auth
+      } else {
+        console.log('✅ Usuario insertado con cédula:', userData.cedula.trim())
+      }
+    }
+
+    // PASO 3: Verificar que la cédula se guardó correctamente
+    await new Promise(resolve => setTimeout(resolve, 500))
+    const { data: finalCheck } = await supabase
       .from('users')
-      .upsert({
-        id: data.user.id,
-        cedula: userData.cedula.trim(),
-        nombre: nombre,
-        email: email,
-        telefono: sanitizeInput(userData.telefono || '') || null,
-        empresa_nombre: sanitizeInput(userData.empresa_nombre || '') || null,
-        cargo: sanitizeInput(userData.cargo || '') || null,
-        rol: 'Vendedor',
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'id' })
+      .select('cedula, nombre, email')
+      .eq('id', data.user.id)
+      .maybeSingle()
 
-    if (userInsertError) {
-      console.warn('Warning al guardar usuario:', userInsertError.message)
-      // No fallar - el usuario se registró en auth exitosamente
-    } else {
-      console.log('✅ Usuario guardado en tabla users:', userData.cedula)
+    if (finalCheck) {
+      console.log('✅ Verificación final - Usuario guardado:', finalCheck)
+      if (finalCheck.cedula !== userData.cedula.trim()) {
+        console.warn('⚠️ Cédula no coincide! Esperada:', userData.cedula.trim(), 'Actual:', finalCheck.cedula)
+      }
     }
 
     return { ok: true, data }
   } catch (err) {
-    console.error('SignUp error:', err)
+    console.error('❌ SignUp error:', err)
     return { ok: false, error: 'Error al registrarse: ' + err.message }
   }
 }
@@ -139,52 +194,59 @@ export async function signIn(cedula, password) {
   }
 
   try {
-    const cedulaLimpita = cedula.trim()
+    const cedulaTrim = cedula.trim()
+    console.log('🔍 Buscando usuario con cédula:', cedulaTrim)
 
-    // Intentar buscar el usuario por cedula
+    // PASO 1: Buscar el usuario por cedula
     let { data: userData, error: userError } = await supabase
       .from('users')
-      .select('email, id, cedula')
-      .eq('cedula', cedulaLimpita)
+      .select('id, email, cedula, nombre')
+      .eq('cedula', cedulaTrim)
       .maybeSingle()
 
-    // Si no encuentra por cédula exacta, intenta sin espacios o variaciones
-    if (!userData && userError?.code === 'PGRST116') {
-      // Intenta búsqueda más flexible (sin espacios)
-      const cedulaSinEspacios = cedulaLimpita.replace(/\s/g, '')
-      const { data: result2 } = await supabase
+    // Si no encuentra exacto, intenta búsqueda más flexible
+    if (!userData) {
+      console.log('⚠️ No encontrado exacto. Intentando búsqueda flexible...')
+      const { data: flexibleResult } = await supabase
         .from('users')
-        .select('email, id, cedula')
-        .ilike('cedula', `%${cedulaSinEspacios}%`)
+        .select('id, email, cedula, nombre')
+        .ilike('cedula', `%${cedulaTrim}%`)
         .maybeSingle()
       
-      userData = result2
+      userData = flexibleResult
     }
 
     if (!userData?.email) {
-      console.error('Usuario no encontrado con cédula:', cedulaLimpita)
+      console.error('❌ Usuario no encontrado con cédula:', cedulaTrim)
+      console.log('💡 Consulta la base de datos para verificar las cédulas disponibles')
       return { 
         ok: false, 
-        error: 'Usuario no encontrado. Verifica tu cédula o regístrate.' 
+        error: 'Usuario no encontrado. Verifica tu cédula o regístrate primero.' 
       }
     }
 
-    console.log('Usuario encontrado:', userData.id, userData.cedula)
+    console.log('✅ Usuario encontrado:', userData.nombre, '-', userData.email)
 
-    // Usar el email real del usuario para autenticarse
-    const { data, error } = await supabase.auth.signInWithPassword({
+    // PASO 2: Usar el email del usuario para autenticarse
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: userData.email,
-      password,
+      password: password,
     })
 
-    if (error) {
-      console.error('Auth error:', error.message)
-      return { ok: false, error: error.message || 'Contraseña incorrecta.' }
+    if (authError) {
+      console.error('❌ Error de autenticación:', authError.message)
+      return { ok: false, error: 'Contraseña incorrecta.' }
     }
 
-    return { ok: true, data }
+    if (!authData?.user) {
+      console.error('❌ No auth user returned')
+      return { ok: false, error: 'Error al iniciar sesión. Intenta de nuevo.' }
+    }
+
+    console.log('✅ Login exitoso para:', userData.nombre)
+    return { ok: true, data: authData }
   } catch (err) {
-    console.error('SignIn error:', err)
+    console.error('❌ SignIn error:', err)
     return { ok: false, error: 'No se pudo conectar con el servidor. Intenta más tarde.' }
   }
 }
