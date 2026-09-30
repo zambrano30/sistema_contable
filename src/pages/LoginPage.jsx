@@ -121,33 +121,12 @@ export default function LoginPage() {
             </>
           )}
 
-          <div className="form-group">
-            <label htmlFor="password">Contraseña</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-
           {/* Registration Fields */}
           {isSignUp && (
             <>
+              {/* DATOS PERSONALES REQUERIDOS */}
               <div className="form-group">
-                <label htmlFor="cedula-signup">Cédula</label>
-                <input
-                  id="cedula-signup"
-                  type="text"
-                  value={cedula}
-                  onChange={(e) => setCedula(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="nombre">Nombre Completo</label>
+                <label htmlFor="nombre">Nombre Completo *</label>
                 <input
                   id="nombre"
                   type="text"
@@ -158,7 +137,18 @@ export default function LoginPage() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="email">Email</label>
+                <label htmlFor="cedula-signup">Cédula *</label>
+                <input
+                  id="cedula-signup"
+                  type="text"
+                  value={cedula}
+                  onChange={(e) => setCedula(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="email">Email *</label>
                 <input
                   id="email"
                   type="email"
@@ -168,8 +158,9 @@ export default function LoginPage() {
                 />
               </div>
 
+              {/* DATOS DE CONTACTO OPCIONALES */}
               <div className="form-group">
-                <label htmlFor="telefono">Teléfono (opcional)</label>
+                <label htmlFor="telefono">Teléfono</label>
                 <input
                   id="telefono"
                   type="text"
@@ -178,8 +169,9 @@ export default function LoginPage() {
                 />
               </div>
 
+              {/* DATOS DE EMPRESA OPCIONALES */}
               <div className="form-group">
-                <label htmlFor="empresa">Nombre Empresa (opcional)</label>
+                <label htmlFor="empresa">Empresa</label>
                 <input
                   id="empresa"
                   type="text"
@@ -189,7 +181,7 @@ export default function LoginPage() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="cargo">Cargo (opcional)</label>
+                <label htmlFor="cargo">Cargo</label>
                 <input
                   id="cargo"
                   type="text"
@@ -199,6 +191,18 @@ export default function LoginPage() {
               </div>
             </>
           )}
+
+          {/* Contraseña */}
+          <div className="form-group">
+            <label htmlFor="password">Contraseña</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
 
           <button 
             type="submit" 
