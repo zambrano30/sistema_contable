@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { signIn, signUp } from '../services/authService'
+import { signIn, signUp, validateCedula, sanitizeInput } from '../services/authService'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
+  const [cedula, setCedula] = useState('')
+  const [password, setPassword] = useState('')
+  const [nombre, setNombre] = useState('')
+  const [email, setEmail] = useState('')
+  const [telefono, setTelefono] = useState('')
+  const [empresa, setEmpresa] = useState('')
+  const [cargo, setCargo] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
@@ -16,19 +21,55 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const authFn = isSignUp ? signUp : signIn
-      const result = await authFn(email, password)
+      if (isSignUp) {
+        // Validar campos de registro
+        if (!validateCedula(cedula)) {
+          setError('Cédula debe tener entre 6 y 20 números')
+          setLoading(false)
+          return
+        }
+        if (!nombre || nombre.trim().length < 2) {
+          setError('El nombre debe tener mínimo 2 caracteres')
+          setLoading(false)
+          return
+        }
+        if (!email || !email.includes('@')) {
+          setError('Email inválido')
+          setLoading(false)
+          return
+        }
+        if (password.length < 6) {
+          setError('La contraseña debe tener mínimo 6 caracteres')
+          setLoading(false)
+          return
+        }
 
-      if (result.ok) {
-        if (isSignUp && !result.data?.session) {
-          setError('Cuenta creada. Revisa tu correo para confirmar el registro.')
-        } else if (result.data?.session?.user) {
-          navigate('/sales')
+        const result = await signUp({
+          cedula: cedula.trim(),
+          password,
+          nombre: sanitizeInput(nombre),
+          email: sanitizeInput(email),
+          telefono: sanitizeInput(telefono),
+          empresa_nombre: sanitizeInput(empresa),
+          cargo: sanitizeInput(cargo),
+        })
+
+        if (result.ok) {
+          setError('Cuenta creada exitosamente. Revisa tu correo para confirmar.')
+          setTimeout(() => setIsSignUp(false), 2000)
+        } else {
+          setError(result.error || 'Error al registrarse')
         }
       } else {
-        setError(result.error)
+        // Login
+        const result = await signIn(cedula.trim(), password)
+        if (result.ok) {
+          navigate('/sales')
+        } else {
+          setError(result.error || 'Error al iniciar sesión')
+        }
       }
-    } catch {
+    } catch (err) {
       setError('Error inesperado. Intenta de nuevo.')
     } finally {
       setLoading(false)
@@ -62,42 +103,86 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          {/* Login Fields */}
           <div className="form-group">
-            <label htmlFor="email">Correo Electrónico</label>
-            <div className="relative flex items-center">
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="usuario@empresa.com"
-                className="w-full pl-11"
-                required
-              />
-              <span className="material-symbols-outlined absolute left-3.5 text-[var(--text-tertiary)] text-xl pointer-events-none">
-                mail
-              </span>
-            </div>
+            <label htmlFor="cedula">Usuario (Cédula)</label>
+            <input
+              id="cedula"
+              type="text"
+              value={cedula}
+              onChange={(e) => setCedula(e.target.value)}
+              required
+            />
           </div>
 
           <div className="form-group">
             <label htmlFor="password">Contraseña</label>
-            <div className="relative flex items-center">
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-11"
-                required
-              />
-              <span className="material-symbols-outlined absolute left-3.5 text-[var(--text-tertiary)] text-xl pointer-events-none">
-                lock
-              </span>
-            </div>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
           </div>
+
+          {/* Registration Fields */}
+          {isSignUp && (
+            <>
+              <div className="form-group">
+                <label htmlFor="nombre">Nombre Completo</label>
+                <input
+                  id="nombre"
+                  type="text"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="telefono">Teléfono (opcional)</label>
+                <input
+                  id="telefono"
+                  type="text"
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="empresa">Nombre Empresa (opcional)</label>
+                <input
+                  id="empresa"
+                  type="text"
+                  value={empresa}
+                  onChange={(e) => setEmpresa(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="cargo">Cargo (opcional)</label>
+                <input
+                  id="cargo"
+                  type="text"
+                  value={cargo}
+                  onChange={(e) => setCargo(e.target.value)}
+                />
+              </div>
+            </>
+          )}
 
           <button 
             type="submit" 
@@ -113,8 +198,8 @@ export default function LoginPage() {
                   ? 'Creando cuenta...'
                   : 'Iniciando sesión...'
                 : isSignUp
-                  ? 'Crear Cuenta Profesional'
-                  : 'Ingresar al Sistema'}
+                  ? 'Crear Cuenta'
+                  : 'Ingresar'}
             </span>
           </button>
         </form>

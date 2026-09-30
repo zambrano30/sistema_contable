@@ -1,9 +1,11 @@
 import './App.css'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { CompanyProvider, useCompany } from './contexts/CompanyContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { Layout } from './components/Layout'
 import LoginPage from './pages/LoginPage'
+import PasswordPage from './pages/PasswordPage'
 import DashboardPage from './pages/DashboardPage'
 import ClientsPage from './pages/ClientsPage'
 import SalesPage from './pages/SalesPage'
@@ -14,6 +16,7 @@ import KitchenPage from './pages/KitchenPage'
 import AdminPage from './pages/AdminPage'
 import CashClosingPage from './pages/CashClosingPage'
 import CoinCounterPage from './pages/CoinCounterPage'
+import CompanySetupPage from './pages/CompanySetupPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -31,14 +34,24 @@ function ProtectedRoute({ children }) {
 
 function AppContent() {
   const { user, loading } = useAuth()
+  const { activeCompany, loading: companyLoading } = useCompany()
 
   if (loading) {
     return <div className="loading">Inicializando aplicación...</div>
   }
 
+  if (user && companyLoading) {
+    return <div className="loading">Cargando empresa...</div>
+  }
+
+  if (user && !activeCompany) {
+    return <CompanySetupPage />
+  }
+
   return (
     <Routes>
       <Route path="/" element={user ? <Navigate to={user.role === 'Cocinero' ? '/kitchen' : '/sales'} /> : <LoginPage />} />
+      <Route path="/password" element={<PasswordPage />} />
       <Route
         path="/dashboard"
         element={
@@ -139,6 +152,14 @@ function AppContent() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/company-setup"
+        element={
+          <ProtectedRoute>
+            <CompanySetupPage />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   )
 }
@@ -148,7 +169,9 @@ export default function App() {
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <AppContent />
+          <CompanyProvider>
+            <AppContent />
+          </CompanyProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

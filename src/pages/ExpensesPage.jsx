@@ -285,7 +285,7 @@ export default function ExpensesPage() {
             <span className="material-symbols-outlined text-red-400 text-3xl">trending_down</span>
             <span>Gestión de Gastos y Egresos</span>
           </h1>
-          <p className="page-subtitle">Registro de egresos por categoría, compras e insumos de operación</p>
+
         </div>
 
         <button
@@ -400,7 +400,7 @@ export default function ExpensesPage() {
                         type="text"
                         value={newProviderName}
                         onChange={(e) => setNewProviderName(e.target.value)}
-                        placeholder="Ej: Distribuidora Central"
+                        placeholder=""
                         autoFocus
                       />
                     </div>
@@ -446,7 +446,7 @@ export default function ExpensesPage() {
                     name="item_name"
                     value={formData.item_name}
                     onChange={handleFormChange}
-                    placeholder="Escribe el nombre del nuevo producto"
+                    placeholder=""
                     autoFocus
                     required
                   />
@@ -534,7 +534,7 @@ export default function ExpensesPage() {
                   value={formData.notes}
                   onChange={handleFormChange}
                   rows="2"
-                  placeholder="Proveedor, comprobante #..."
+                  placeholder=""
                 />
               </div>
 

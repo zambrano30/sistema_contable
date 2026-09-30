@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
+import { getActiveCompanyId } from './companyService'
 import { ensureUserExists } from './userService'
 
 // Generate a unique SKU
@@ -19,10 +20,13 @@ export async function getAllProducts() {
   }
 
   try {
-    // First, try simple select without filters to debug
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de ver productos' }
+
     const { data, error } = await supabase
       .from('products')
       .select('*')
+      .eq('company_id', companyId)
       .eq('is_active', true)
       .order('created_at', { ascending: false })
 
@@ -91,7 +95,11 @@ export async function createProduct(product) {
       return { ok: false, error: 'Could not verify user in database' }
     }
 
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de crear productos' }
+
     const productData = {
+      company_id: companyId,
       name: product.name,
       description: product.description || '',
       sku: product.sku || generateUniqueSKU(), // Generate truly unique SKU

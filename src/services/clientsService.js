@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
+import { getActiveCompanyId } from './companyService'
 import { ensureUserExists } from './userService'
 
 /**
@@ -14,9 +15,13 @@ export async function getAllClients() {
   }
 
   try {
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de ver clientes' }
+
     const { data, error } = await supabase
       .from('clients')
       .select('*')
+      .eq('company_id', companyId)
       .eq('is_active', true)
       .order('created_at', { ascending: false })
 
@@ -74,7 +79,11 @@ export async function createClient(client) {
       return { ok: false, error: 'Could not verify user in database' }
     }
 
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de crear clientes' }
+
     const clientData = {
+      company_id: companyId,
       name: client.name,
       email: client.email || '',
       phone: client.phone || '',

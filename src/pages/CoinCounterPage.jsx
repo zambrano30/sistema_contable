@@ -40,7 +40,7 @@ export default function CoinCounterPage() {
             <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">toll</span>
             <span>Contador de monedas</span>
           </h1>
-          <p className="page-subtitle">Ingresa la cantidad de cada moneda para conocer el valor total</p>
+
         </div>
         <div className="flex gap-3 print-hide">
           <button type="button" className="btn-secondary" onClick={clearCounts}>
@@ -74,7 +74,7 @@ export default function CoinCounterPage() {
                 pattern="[0-9]*"
                 value={counts[value]}
                 onChange={(event) => handleCountChange(value, event.target.value)}
-                placeholder="0"
+                placeholder=""
                 aria-label={`Cantidad de monedas de ${label}`}
               />
               <span className="coin-subtotal">Subtotal: {formatCurrency(value * quantity)}</span>

@@ -33,6 +33,8 @@ const normalizeRole = (role) => {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [lastActivityTime, setLastActivityTime] = useState(Date.now())
+  const SESSION_TIMEOUT = 30 * 60 * 1000 // 30 minutos en ms
 
   useEffect(() => {
     ;['demo_user', 'demo_invoices', 'demo_clients', 'demo_products', 'demo_movements', 'demo_commands', 'demo_cooks', 'demo_vendors', 'cash_closings']
@@ -87,9 +89,38 @@ export function AuthProvider({ children }) {
     return unsubscribe
   }, [])
 
+  // Timeout de sesión - cerrar después de 30 minutos inactivo
+  useEffect(() => {
+    const handleActivity = () => {
+      setLastActivityTime(Date.now())
+    }
+
+    const checkTimeout = setInterval(() => {
+      if (user && Date.now() - lastActivityTime > SESSION_TIMEOUT) {
+        // Sesión expirada por inactividad
+        logout()
+      }
+    }, 60000) // Verificar cada minuto
+
+    // Eventos para detectar actividad
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click']
+    events.forEach(event => {
+      document.addEventListener(event, handleActivity, true)
+    })
+
+    return () => {
+      clearInterval(checkTimeout)
+      events.forEach(event => {
+        document.removeEventListener(event, handleActivity, true)
+      })
+    }
+  }, [user, lastActivityTime])
+
   const logout = async () => {
-    await signOut()
-    setUser(null)
+    const result = await signOut()
+    if (result.ok) {
+      setUser(null)
+    }
   }
 
   return (

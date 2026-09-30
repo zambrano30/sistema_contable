@@ -128,16 +128,17 @@ export default function InvoicesPage() {
     <div className="page-container">
       <header className="page-header">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
-            <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">receipt_long</span>
+          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight flex items-center gap-2">
+            <span className="material-symbols-outlined text-[var(--accent-orange)] text-2xl sm:text-3xl">receipt_long</span>
             <span>Facturas</span>
           </h1>
-          <p className="page-subtitle">Consulta y administra todas las facturas registradas</p>
+
         </div>
         {selectedInvoices.size > 0 && (
-          <button onClick={handleDeleteSelectedInvoices} className="btn-danger text-xs font-bold">
+          <button onClick={handleDeleteSelectedInvoices} className="btn-danger text-xs sm:text-sm font-bold">
             <span className="material-symbols-outlined text-sm">delete</span>
-            <span>Eliminar ({selectedInvoices.size}) seleccionadas</span>
+            <span className="hidden sm:inline">Eliminar ({selectedInvoices.size}) seleccionadas</span>
+            <span className="sm:hidden">({selectedInvoices.size})</span>
           </button>
         )}
       </header>
@@ -153,62 +154,62 @@ export default function InvoicesPage() {
         {invoices.length === 0 ? (
           <p className="text-center text-[var(--text-tertiary)] py-8">No se registraron facturas todavía</p>
         ) : (
-          <div className="table-wrapper">
-            <table className="custom-table">
+          <div className="table-wrapper overflow-x-auto">
+            <table className="custom-table w-full">
               <thead>
                 <tr>
-                  <th className="w-10">
+                  <th className="w-10 px-2">
                     <input
                       type="checkbox"
                       checked={selectedInvoices.size === invoices.length && invoices.length > 0}
                       onChange={toggleSelectAll}
-                      className="w-4 h-4 cursor-pointer"
+                      className="w-5 h-5 cursor-pointer"
                     />
                   </th>
-                  <th>Factura #</th>
-                  <th>Cliente</th>
-                  <th>Fecha</th>
-                  <th className="text-right">Monto Total</th>
-                  <th className="text-center">Acciones</th>
+                  <th className="text-left px-2 text-xs sm:text-sm">Factura #</th>
+                  <th className="text-left px-2 text-xs sm:text-sm">Cliente</th>
+                  <th className="text-left px-2 text-xs sm:text-sm">Fecha</th>
+                  <th className="text-right px-2 text-xs sm:text-sm">Monto Total</th>
+                  <th className="text-center px-2 text-xs sm:text-sm">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {invoices.map((invoice) => (
-                  <tr key={invoice.id}>
-                    <td>
+                  <tr key={invoice.id} className="hover:bg-white/5 transition-colors">
+                    <td className="px-2 py-3">
                       <input
                         type="checkbox"
                         checked={selectedInvoices.has(invoice.id)}
                         onChange={() => toggleInvoiceSelection(invoice.id)}
-                        className="w-4 h-4 cursor-pointer"
+                        className="w-5 h-5 cursor-pointer"
                       />
                     </td>
-                    <td className="sku-cell">#{invoice.invoice_number || invoice.id}</td>
-                    <td className="font-bold text-white">
+                    <td className="sku-cell px-2 py-3 text-xs sm:text-sm font-mono">#{invoice.invoice_number || invoice.id}</td>
+                    <td className="font-bold text-white px-2 py-3 text-xs sm:text-sm truncate">
                       {invoice.client_id
                         ? capitalize(clients.find(client => client.id === invoice.client_id)?.name || `Cliente ${invoice.client_id}`)
                         : 'Consumidor Final'}
                     </td>
-                    <td className="text-xs text-[var(--text-secondary)]">
+                    <td className="text-xs text-[var(--text-secondary)] px-2 py-3 whitespace-nowrap">
                       {new Date(`${getLocalDateKey(invoice.created_at || invoice.invoice_date)}T00:00:00`).toLocaleDateString()}
                     </td>
-                    <td className="text-right font-mono font-bold text-[var(--accent-orange-light)]">
+                    <td className="text-right font-mono font-bold text-[var(--accent-orange-light)] px-2 py-3 text-xs sm:text-sm whitespace-nowrap">
                       ${Number(invoice.total_amount || 0).toFixed(2)}
                     </td>
-                    <td className="text-center">
-                      <div className="flex items-center justify-center gap-3">
+                    <td className="text-center px-2 py-3">
+                      <div className="flex items-center justify-center gap-2 sm:gap-3">
                         <button
                           onClick={() => handleDownloadPDF(invoice)}
                           title="Descargar PDF SRI"
-                          className="text-blue-400 hover:text-blue-300 flex items-center gap-1 font-bold text-xs"
+                          className="text-blue-400 hover:text-blue-300 flex items-center gap-1 font-bold text-xs p-1.5 rounded hover:bg-blue-400/10 transition-all"
                         >
                           <span className="material-symbols-outlined text-base">download</span>
-                          <span>PDF</span>
+                          <span className="hidden sm:inline">PDF</span>
                         </button>
                         <button
                           onClick={() => handleDeleteInvoice(invoice.id)}
                           title="Eliminar registro"
-                          className="text-red-400 hover:text-red-300 flex items-center gap-1 text-xs"
+                          className="text-red-400 hover:text-red-300 flex items-center gap-1 text-xs p-1.5 rounded hover:bg-red-400/10 transition-all"
                         >
                           <span className="material-symbols-outlined text-base">delete</span>
                         </button>

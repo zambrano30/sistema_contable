@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { getAllProducts, createProduct, updateProduct, deleteProduct } from '../services/productsService'
-import { BarcodeScanner } from '../components/BarcodeScanner'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function ProductsPage() {
@@ -11,7 +10,6 @@ export default function ProductsPage() {
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
-  const [showScanner, setShowScanner] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [validationError, setValidationError] = useState('')
   const [formData, setFormData] = useState({
@@ -63,11 +61,6 @@ export default function ProductsPage() {
     setValidationError('')
     setEditingId(null)
     setShowForm(false)
-  }
-
-  const handleBarcodeScanned = (barcode) => {
-    setFormData(prev => ({ ...prev, sku: barcode }))
-    setShowScanner(false)
   }
 
   const handleSubmit = async (e) => {
@@ -151,19 +144,20 @@ export default function ProductsPage() {
       {/* Header */}
       <header className="page-header">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
-            <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">inventory_2</span>
+          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight flex items-center gap-2">
+            <span className="material-symbols-outlined text-[var(--accent-orange)] text-2xl sm:text-3xl">inventory_2</span>
             <span>Catálogo de Productos</span>
           </h1>
-          <p className="page-subtitle">Productos, precios de venta y códigos SKU / Barcode</p>
+
         </div>
 
         <button 
           onClick={() => { resetForm(); setShowForm(true); }} 
-          className="btn-primary"
+          className="btn-primary text-xs sm:text-sm"
         >
           <span className="material-symbols-outlined">add</span>
-          <span>Nuevo Producto</span>
+          <span className="hidden sm:inline">Nuevo Producto</span>
+          <span className="sm:hidden">Nuevo</span>
         </button>
       </header>
 
@@ -174,38 +168,14 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* Barcode Scanner Modal */}
-      {showScanner && (
-        <div className="modal-overlay">
-          <div className="modal-content max-w-md">
-            <div className="flex justify-between items-center mb-4 pb-2 border-b border-[var(--border-color)]">
-              <h3 className="text-lg font-bold text-[var(--text-primary)] m-0 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[var(--accent-orange)]">qr_code_scanner</span>
-                <span>Escanear Código de Barras</span>
-              </h3>
-              <button 
-                className="text-[var(--text-tertiary)] hover:text-white bg-none border-none cursor-pointer"
-                onClick={() => setShowScanner(false)}
-              >
-                <span className="material-symbols-outlined text-2xl">close</span>
-              </button>
-            </div>
-            <BarcodeScanner
-              onScan={handleBarcodeScanned}
-              onClose={() => setShowScanner(false)}
-            />
-          </div>
-        </div>
-      )}
-
       {/* Form Modal */}
       {showForm && (
         <div className="modal-overlay" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) resetForm(); }}>
           <div className="modal-content">
             <div className="flex justify-between items-center mb-5 pb-3 border-b border-[var(--border-color)]">
-              <h2 className="text-xl font-extrabold text-[var(--text-primary)] m-0 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[var(--accent-orange)]">edit_note</span>
-                <span>{editingId ? 'Editar Producto' : 'Crear Nuevo Producto'}</span>
+              <h2 className="text-lg sm:text-xl font-extrabold text-[var(--text-primary)] m-0 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[var(--accent-orange)] text-xl sm:text-2xl">edit_note</span>
+                <span>{editingId ? 'Editar Producto' : 'Crear Producto'}</span>
               </h2>
               <button 
                 className="text-[var(--text-tertiary)] hover:text-white bg-none border-none cursor-pointer"
@@ -231,32 +201,21 @@ export default function ProductsPage() {
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    placeholder="Ej: Impresora Térmica POS"
+                    placeholder=""
                     required
                   />
                 </div>
 
                 <div className="form-group">
                   <label>Código SKU / Barcode</label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      name="sku" 
-                      value={formData.sku} 
-                      onChange={handleInputChange} 
-                      placeholder="779000112233"
-                      className="flex-1 font-mono"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowScanner(true)}
-                      className="btn-secondary px-3 flex items-center justify-center gap-1"
-                      title="Escanear código de barras con la cámara del celular"
-                    >
-                      <span className="material-symbols-outlined text-lg text-[var(--accent-orange)]">qr_code_scanner</span>
-                      <span className="text-xs font-bold whitespace-nowrap">Cámara</span>
-                    </button>
-                  </div>
+                  <input 
+                    type="text" 
+                    name="sku" 
+                    value={formData.sku} 
+                    onChange={handleInputChange} 
+                    placeholder=""
+                    className="font-mono"
+                  />
                 </div>
               </div>
 
@@ -266,7 +225,7 @@ export default function ProductsPage() {
                   name="description" 
                   value={formData.description} 
                   onChange={handleInputChange}
-                  placeholder="Detalles técnicos o especificaciones..."
+                  placeholder=""
                   rows="2"
                 />
               </div>
@@ -280,7 +239,7 @@ export default function ProductsPage() {
                     value={formData.price}
                     onChange={handleInputChange}
                     step="0.01"
-                    placeholder="0.00"
+                    placeholder=""
                     className="font-mono font-bold"
                     required
                   />
@@ -294,7 +253,7 @@ export default function ProductsPage() {
                     value={formData.purchase_price}
                     onChange={handleInputChange}
                     step="0.01"
-                    placeholder="0.00"
+                    placeholder=""
                     className="font-mono"
                   />
                 </div>
@@ -308,7 +267,7 @@ export default function ProductsPage() {
                     name="quantity"
                     value={formData.quantity}
                     onChange={handleInputChange}
-                    placeholder="0"
+                    placeholder=""
                     className="font-mono"
                   />
                 </div>
@@ -320,7 +279,7 @@ export default function ProductsPage() {
                     name="minimum_quantity"
                     value={formData.minimum_quantity}
                     onChange={handleInputChange}
-                    placeholder="10"
+                    placeholder=""
                     className="font-mono"
                   />
                 </div>
@@ -341,14 +300,14 @@ export default function ProductsPage() {
       )}
 
       {/* Search Bar */}
-      <div className="card flex items-center gap-3">
-        <span className="material-symbols-outlined text-[var(--accent-orange)] text-xl">search</span>
+      <div className="card flex items-center gap-2 sm:gap-3">
+        <span className="material-symbols-outlined text-[var(--accent-orange)] text-lg sm:text-xl flex-shrink-0">search</span>
         <input 
           type="text" 
-          placeholder="Buscar producto por nombre o código SKU..."
+          placeholder=""
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-transparent border-none outline-none text-[var(--text-primary)] font-medium text-sm"
+          className="w-full bg-transparent border-none outline-none text-[var(--text-primary)] font-medium text-xs sm:text-sm"
         />
       </div>
 

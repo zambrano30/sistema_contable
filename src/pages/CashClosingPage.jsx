@@ -167,7 +167,7 @@ export default function CashClosingPage() {
             <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">point_of_sale</span>
             <span>Cierre de caja</span>
           </h1>
-          <p className="page-subtitle">Comprueba las ventas del día y cuadra el efectivo contado</p>
+
         </div>
         <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
           Fecha

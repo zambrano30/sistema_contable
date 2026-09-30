@@ -121,7 +121,7 @@ export default function DashboardPage() {
             <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">grid_view</span>
             <span>Panel Principal</span>
           </h1>
-          <p className="page-subtitle">Resumen general de facturación, ingresos y clientes</p>
+
         </div>
 
         <div className="flex items-center gap-3">

@@ -157,7 +157,7 @@ export function BarcodeScanner({ onScan, onClose }) {
                 type="text"
                 value={keyboardInput}
                 onChange={(e) => setKeyboardInput(e.target.value)}
-                placeholder="Escanea aquí..."
+                placeholder=""
                 className="scanner-input"
                 autoFocus
               />

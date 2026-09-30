@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
+import { getActiveCompanyId } from './companyService'
 import { ensureUserExists } from './userService'
 
 export async function getAllProviders() {
@@ -29,9 +30,12 @@ export async function createProvider(name) {
     const userExists = await ensureUserExists()
     if (!userExists) return { ok: false, error: 'Could not verify user in database' }
 
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de crear proveedores' }
+
     const { data, error } = await supabase
       .from('providers')
-      .insert([{ name: name.trim(), is_active: true }])
+      .insert([{ company_id: companyId, name: name.trim(), is_active: true }])
       .select('*')
       .single()
 

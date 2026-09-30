@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
+import { getActiveCompanyId } from './companyService'
 import { ensureUserExists } from './userService'
 
 /**
@@ -10,9 +11,13 @@ export async function getAllInvoices(filters = {}) {
   }
 
   try {
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de ver facturas' }
+
     let query = supabase
       .from('invoices')
       .select('*, invoice_items(*, products(*))')
+      .eq('company_id', companyId)
       .order('created_at', { ascending: false })
 
     if (filters.status) {
@@ -50,6 +55,9 @@ export async function getTotalSales(period = 'month') {
     }
   }
 
+  const companyId = getActiveCompanyId()
+  if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de ver estadísticas' }
+
   const now = new Date()
   let startDate, previousStartDate
 
@@ -69,6 +77,7 @@ export async function getTotalSales(period = 'month') {
   const { data: currentData, error: currentError } = await supabase
     .from('invoices')
     .select('total_amount')
+    .eq('company_id', companyId)
     .gte('invoice_date', startDate.toISOString().split('T')[0])
 
   // Previous period total
@@ -78,6 +87,7 @@ export async function getTotalSales(period = 'month') {
   const { data: previousData, error: previousError } = await supabase
     .from('invoices')
     .select('total_amount')
+    .eq('company_id', companyId)
     .gte('invoice_date', previousStartDate.toISOString().split('T')[0])
     .lte('invoice_date', endPreviousPeriod.toISOString().split('T')[0])
 
@@ -113,9 +123,13 @@ export async function getMonthlySalesData(months = 12) {
     }
   }
 
+  const companyId = getActiveCompanyId()
+  if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de ver estadísticas' }
+
   const { data, error } = await supabase
     .from('invoices')
     .select('invoice_date, total_amount')
+    .eq('company_id', companyId)
     .order('invoice_date', { ascending: true })
 
   if (error) {
@@ -158,6 +172,9 @@ export async function getMonthlyBalanceData(months = 6) {
     }
   }
 
+  const companyId = getActiveCompanyId()
+  if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de ver estadísticas' }
+
   const now = new Date()
   const startMonthIndex = 7 // Agosto
   const startYear = now.getMonth() < startMonthIndex ? now.getFullYear() - 1 : now.getFullYear()
@@ -180,11 +197,13 @@ export async function getMonthlyBalanceData(months = 6) {
   const { data: invoicesData, error: invoicesError } = await supabase
     .from('invoices')
     .select('invoice_date, total_amount')
+    .eq('company_id', companyId)
     .order('invoice_date', { ascending: true })
 
   const { data: expensesData, error: expensesError } = await supabase
     .from('expenses')
     .select('expense_date, amount')
+    .eq('company_id', companyId)
     .eq('is_active', true)
     .order('expense_date', { ascending: true })
 
@@ -231,7 +250,13 @@ export async function getInvoiceStats() {
     }
   }
 
-  const { data, error } = await supabase.from('invoices').select('status')
+  const companyId = getActiveCompanyId()
+  if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de ver estadísticas' }
+
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('status')
+    .eq('company_id', companyId)
 
   if (error) {
     return { ok: false, error: error.message }
@@ -292,6 +317,9 @@ export async function createInvoice(invoiceData) {
       return { ok: false, error: 'Could not verify user in database' }
     }
 
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de crear facturas' }
+
     // Get current user ID
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     const userId = user?.id
@@ -303,6 +331,7 @@ export async function createInvoice(invoiceData) {
       .from('invoices')
       .insert([
         {
+          company_id: companyId,
           client_id: invoice.client_id,
           user_id: userId,
           invoice_date: invoice.invoice_date || new Date().toISOString(),
@@ -329,6 +358,7 @@ export async function createInvoice(invoiceData) {
     // Create invoice items if provided
     if (items && items.length > 0) {
       const itemsData = items.map(item => ({
+        company_id: companyId,
         invoice_id: newInvoice.id,
         product_id: item.product_id,
         quantity: item.quantity,

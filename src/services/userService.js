@@ -43,10 +43,11 @@ export async function getCurrentUser() {
       return null
     }
 
+    // Buscar usuario por email real
     const { data, error } = await supabase
       .from('users')
       .select('*')
-      .eq('id', user.id)
+      .eq('email', user.email)
       .single()
 
     if (error) {

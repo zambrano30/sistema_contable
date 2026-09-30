@@ -9,6 +9,8 @@ export default function ClientsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
+  const [selectedClient, setSelectedClient] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [formData, setFormData] = useState({
@@ -96,6 +98,12 @@ export default function ClientsPage() {
     })
     setEditingId(client.id)
     setShowForm(true)
+    setShowDetails(false)
+  }
+
+  const handleViewDetails = (client) => {
+    setSelectedClient(client)
+    setShowDetails(true)
   }
 
   const handleDelete = async (id) => {
@@ -130,19 +138,19 @@ export default function ClientsPage() {
       {/* Header */}
       <header className="page-header">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
-            <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">group</span>
+          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight flex items-center gap-2">
+            <span className="material-symbols-outlined text-[var(--accent-orange)] text-2xl sm:text-3xl">group</span>
             <span>Directorio de Clientes</span>
           </h1>
-          <p className="page-subtitle">Gestión de clientes, RUC/Cédula y datos de facturación</p>
         </div>
 
         <button 
           onClick={() => { resetForm(); setShowForm(true); }} 
-          className="btn-primary"
+          className="btn-primary text-xs sm:text-sm"
         >
           <span className="material-symbols-outlined">person_add</span>
-          <span>Registrar Nuevo Cliente</span>
+          <span className="hidden sm:inline">Registrar Nuevo Cliente</span>
+          <span className="sm:hidden">Nuevo</span>
         </button>
       </header>
 
@@ -158,16 +166,28 @@ export default function ClientsPage() {
         <div className="modal-overlay" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) resetForm(); }}>
           <div className="modal-content">
             <div className="flex justify-between items-center mb-5 pb-3 border-b border-[var(--border-color)]">
-              <h2 className="text-xl font-extrabold text-[var(--text-primary)] m-0 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[var(--accent-orange)]">person_add</span>
-                <span>{editingId ? 'Editar Información del Cliente' : 'Registrar Nuevo Cliente'}</span>
+              <h2 className="text-lg sm:text-xl font-extrabold text-[var(--text-primary)] m-0 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[var(--accent-orange)] text-xl sm:text-2xl">person_add</span>
+                <span>{editingId ? 'Editar Cliente' : 'Nuevo Cliente'}</span>
               </h2>
-              <button 
-                className="text-[var(--text-tertiary)] hover:text-white bg-none border-none cursor-pointer"
-                onClick={resetForm}
-              >
-                <span className="material-symbols-outlined text-2xl">close</span>
-              </button>
+              <div className="flex items-center gap-2">
+                {editingId && (
+                  <button 
+                    className="btn-secondary btn-small"
+                    onClick={resetForm}
+                    title="Crear nuevo cliente"
+                  >
+                    <span className="material-symbols-outlined text-sm">person_add</span>
+                    <span className="text-xs">Nuevo</span>
+                  </button>
+                )}
+                <button 
+                  className="text-[var(--text-tertiary)] hover:text-white bg-none border-none cursor-pointer"
+                  onClick={resetForm}
+                >
+                  <span className="material-symbols-outlined text-2xl">close</span>
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -178,7 +198,7 @@ export default function ClientsPage() {
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  placeholder="Ej: Distribuidora Sol S.A."
+                  placeholder=""
                   required
                 />
               </div>
@@ -191,7 +211,7 @@ export default function ClientsPage() {
                     name="tax_id"
                     value={formData.tax_id}
                     onChange={handleInputChange}
-                    placeholder="1792000000001"
+                    placeholder=""
                     required
                   />
                 </div>
@@ -203,7 +223,7 @@ export default function ClientsPage() {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="facturacion@empresa.com"
+                    placeholder=""
                   />
                 </div>
               </div>
@@ -216,7 +236,7 @@ export default function ClientsPage() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    placeholder="0991234567"
+                    placeholder=""
                   />
                 </div>
 
@@ -227,7 +247,7 @@ export default function ClientsPage() {
                     name="address" 
                     value={formData.address} 
                     onChange={handleInputChange}
-                    placeholder="Av. 10 de Agosto N24-12"
+                    placeholder=""
                   />
                 </div>
               </div>
@@ -246,15 +266,96 @@ export default function ClientsPage() {
         </div>
       )}
 
+      {/* Client Details Modal */}
+      {showDetails && selectedClient && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowDetails(false); }}>
+          <div className="modal-content max-w-2xl">
+            <div className="flex justify-between items-center mb-5 pb-3 border-b border-[var(--border-color)]">
+              <h2 className="text-lg sm:text-xl font-extrabold text-[var(--text-primary)] m-0 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[var(--accent-orange)] text-xl sm:text-2xl">person</span>
+                <span>Detalles del Cliente</span>
+              </h2>
+              <button 
+                className="text-[var(--text-tertiary)] hover:text-white bg-none border-none cursor-pointer"
+                onClick={() => setShowDetails(false)}
+              >
+                <span className="material-symbols-outlined text-2xl">close</span>
+              </button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <p className="text-xs text-[var(--text-secondary)] mb-1">Nombre / Razón Social</p>
+                <p className="text-sm sm:text-base font-bold text-white">{selectedClient.name}</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <p className="text-xs text-[var(--text-secondary)] mb-1">Cédula / RUC</p>
+                  <p className="text-sm sm:text-base font-mono font-bold text-white">{selectedClient.tax_id || selectedClient.cedula_ruc || 'N/A'}</p>
+                </div>
+
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <p className="text-xs text-[var(--text-secondary)] mb-1">Correo Electrónico</p>
+                  <p className="text-sm sm:text-base font-bold text-white break-all">
+                    {selectedClient.email ? (
+                      <a href={`mailto:${selectedClient.email}`} className="text-blue-400 hover:text-blue-300">
+                        {selectedClient.email}
+                      </a>
+                    ) : 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <p className="text-xs text-[var(--text-secondary)] mb-1">Teléfono de Contacto</p>
+                  <p className="text-sm sm:text-base font-mono font-bold text-white">
+                    {selectedClient.phone ? (
+                      <a href={`tel:${selectedClient.phone}`} className="text-green-400 hover:text-green-300">
+                        {selectedClient.phone}
+                      </a>
+                    ) : 'N/A'}
+                  </p>
+                </div>
+
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <p className="text-xs text-[var(--text-secondary)] mb-1">Dirección Fiscal</p>
+                  <p className="text-sm sm:text-base font-bold text-white">{selectedClient.address || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end pt-4 border-t border-[var(--border-color)]">
+              <button 
+                type="button" 
+                onClick={() => setShowDetails(false)} 
+                className="btn-secondary text-xs sm:text-sm"
+              >
+                Cerrar
+              </button>
+              <button 
+                type="button" 
+                onClick={() => handleEdit(selectedClient)} 
+                className="btn-primary text-xs sm:text-sm"
+              >
+                <span className="material-symbols-outlined">edit</span>
+                <span>Editar Cliente</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Filter / Search Bar */}
-      <div className="card flex items-center gap-3">
-        <span className="material-symbols-outlined text-[var(--accent-orange)] text-xl">search</span>
+      <div className="card flex items-center gap-2 sm:gap-3">
+        <span className="material-symbols-outlined text-[var(--accent-orange)] text-lg sm:text-xl flex-shrink-0">search</span>
         <input 
           type="text" 
-          placeholder="Buscar cliente por nombre, RUC/Cédula o correo electrónico..."
+          placeholder=""
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-transparent border-none outline-none text-[var(--text-primary)] font-medium text-sm"
+          className="w-full bg-transparent border-none outline-none text-[var(--text-primary)] font-medium text-xs sm:text-sm"
         />
       </div>
 
@@ -271,66 +372,65 @@ export default function ClientsPage() {
             <p className="m-0 text-sm">No hay clientes registrados en la plataforma.</p>
           </div>
         ) : (
-          <div className="table-wrapper">
-            <table className="custom-table">
+          <div className="table-wrapper overflow-x-auto">
+            <table className="custom-table w-full">
               <thead>
                 <tr>
-                  <th>Cliente</th>
-                  <th>Cédula / RUC</th>
-                  <th>Correo</th>
-                  <th>Teléfono</th>
-                  <th>Dirección</th>
-                  <th className="text-right">Acciones</th>
+                  <th className="text-left px-2 text-xs sm:text-sm">Cliente</th>
+                  <th className="text-left px-2 text-xs sm:text-sm">Cédula / RUC</th>
+                  <th className="hidden md:table-cell text-left px-2 text-xs sm:text-sm">Correo</th>
+                  <th className="hidden lg:table-cell text-left px-2 text-xs sm:text-sm">Teléfono</th>
+                  <th className="hidden xl:table-cell text-left px-2 text-xs sm:text-sm">Dirección</th>
+                  <th className="text-right px-2 text-xs sm:text-sm">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredClients.map((client) => (
-                  <tr key={client.id}>
-                    <td>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[var(--accent-orange)] to-[#ff7b00] text-white font-extrabold text-xs flex items-center justify-center shadow-md shadow-[var(--accent-orange)]/20 border border-white/20">
+                  <tr key={client.id} className="hover:bg-white/5 transition-colors">
+                    <td className="px-2 py-3 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => handleViewDetails(client)}>
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-tr from-[var(--accent-orange)] to-[#ff7b00] text-white font-extrabold text-xs flex items-center justify-center shadow-md shadow-[var(--accent-orange)]/20 border border-white/20 flex-shrink-0">
                           {getInitials(client.name)}
                         </div>
-                        <span className="font-bold text-white text-sm">{client.name}</span>
+                        <span className="font-bold text-white text-xs sm:text-sm truncate hover:text-[var(--accent-orange)] transition-colors">{client.name}</span>
                       </div>
                     </td>
-                    <td className="sku-cell">
-                      {client.tax_id || client.cedula_ruc || 'Consumidor Final'}
+                    <td className="sku-cell px-2 py-3 text-xs sm:text-sm font-mono truncate cursor-pointer hover:text-[var(--accent-orange)] transition-colors" onClick={() => handleViewDetails(client)}>
+                      {client.tax_id || client.cedula_ruc || 'CF'}
                     </td>
-                    <td className="text-[var(--text-secondary)] text-sm">
+                    <td className="hidden md:table-cell text-[var(--text-secondary)] text-xs sm:text-sm px-2 py-3 truncate cursor-pointer hover:text-white transition-colors" onClick={() => handleViewDetails(client)}>
                       {client.email ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className="material-symbols-outlined text-xs text-[var(--accent-orange)]">mail</span>
-                          <span>{client.email}</span>
-                        </div>
+                        <a href={`mailto:${client.email}`} className="text-blue-400 hover:text-blue-300" onClick={(e) => e.stopPropagation()}>{client.email}</a>
                       ) : '-'}
                     </td>
-                    <td className="text-[var(--text-secondary)] font-mono text-xs">
-                      {client.phone ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className="material-symbols-outlined text-xs text-blue-400">call</span>
-                          <span>{client.phone}</span>
-                        </div>
-                      ) : '-'}
+                    <td className="hidden lg:table-cell text-[var(--text-secondary)] font-mono text-xs px-2 py-3 whitespace-nowrap cursor-pointer hover:text-white transition-colors" onClick={() => handleViewDetails(client)}>
+                      {client.phone || '-'}
                     </td>
-                    <td className="text-[var(--text-secondary)] text-xs">
+                    <td className="hidden xl:table-cell text-[var(--text-secondary)] text-xs px-2 py-3 truncate cursor-pointer hover:text-white transition-colors" onClick={() => handleViewDetails(client)}>
                       {client.address || '-'}
                     </td>
-                    <td className="text-right">
-                      <div className="flex gap-2 justify-end">
+                    <td className="text-right px-2 py-3">
+                      <div className="flex gap-1.5 sm:gap-2 justify-end">
+                        <button 
+                          onClick={() => handleViewDetails(client)} 
+                          className="p-1.5 sm:p-2 text-green-400 hover:text-green-300 hover:bg-green-400/10 rounded transition-all"
+                          title="Ver detalles"
+                        >
+                          <span className="material-symbols-outlined text-base sm:text-lg">info</span>
+                        </button>
                         <button 
                           onClick={() => handleEdit(client)} 
-                          className="btn-secondary btn-small"
+                          className="p-1.5 sm:p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 rounded transition-all"
                           title="Editar información"
                         >
-                          <span className="material-symbols-outlined text-sm">edit</span>
+                          <span className="material-symbols-outlined text-base sm:text-lg">edit</span>
                         </button>
                         <button 
                           onClick={() => handleDelete(client.id)} 
-                          className="btn-danger btn-small"
+                          className="p-1.5 sm:p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded transition-all"
                           title="Eliminar cliente"
                         >
-                          <span className="material-symbols-outlined text-sm">delete</span>
+                          <span className="material-symbols-outlined text-base sm:text-lg">delete</span>
                         </button>
                       </div>
                     </td>

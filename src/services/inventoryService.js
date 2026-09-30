@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
+import { getActiveCompanyId } from './companyService'
 import { ensureUserExists } from './userService'
 
 /**
@@ -10,9 +11,13 @@ export async function getAllInventoryMovements(filters = {}) {
   }
 
   try {
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de ver inventario' }
+
     let query = supabase
       .from('inventory_movements')
       .select('*')
+      .eq('company_id', companyId)
       .order('created_at', { ascending: false })
 
     if (filters.productId) {
@@ -52,6 +57,9 @@ export async function createInventoryMovement(movementData) {
       return { ok: false, error: 'Could not verify user in database' }
     }
 
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de registrar movimientos' }
+
     // First, get current inventory
     const { data: product, error: productError } = await supabase
       .from('products')
@@ -68,6 +76,7 @@ export async function createInventoryMovement(movementData) {
       .from('inventory_movements')
       .insert([
         {
+          company_id: companyId,
           product_id: movementData.product_id,
           movement_type: movementData.movement_type, // IN, OUT, ADJUSTMENT, RETURN
           quantity: movementData.quantity,
@@ -121,9 +130,13 @@ export async function getLowStockProducts() {
   }
 
   try {
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de ver inventario' }
+
     const { data, error } = await supabase
       .from('products')
       .select('*')
+      .eq('company_id', companyId)
       .lte('quantity_on_hand', supabase.raw('minimum_quantity'))
       .eq('is_active', true)
       .order('quantity_on_hand', { ascending: true })
@@ -149,9 +162,13 @@ export async function getInventorySummary() {
   }
 
   try {
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de ver inventario' }
+
     const { data, error } = await supabase
       .from('products')
       .select('quantity_on_hand, unit_price, minimum_quantity')
+      .eq('company_id', companyId)
       .eq('is_active', true)
 
     if (error) {

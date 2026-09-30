@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
+import { getActiveCompanyId } from './companyService'
 import { ensureUserExists } from './userService'
 
 /**
@@ -10,9 +11,13 @@ export async function getAllExpenses(filters = {}) {
   }
 
   try {
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de ver gastos' }
+
     let query = supabase
       .from('expenses')
       .select('*')
+      .eq('company_id', companyId)
       .eq('is_active', true)
       .order('expense_date', { ascending: false })
 
@@ -51,9 +56,13 @@ export async function getExpensesByCategory(category) {
   }
 
   try {
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de ver gastos' }
+
     const { data, error } = await supabase
       .from('expenses')
       .select('*')
+      .eq('company_id', companyId)
       .eq('category', category)
       .eq('is_active', true)
       .order('expense_date', { ascending: false })
@@ -146,10 +155,14 @@ export async function createExpense(expenseData) {
       return { ok: false, error: 'Could not verify user in database' }
     }
 
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de crear gastos' }
+
     const { data, error } = await supabase
       .from('expenses')
       .insert([
         {
+          company_id: companyId,
           category: expenseData.category,
           item_name: expenseData.item_name,
           description: expenseData.description || '',

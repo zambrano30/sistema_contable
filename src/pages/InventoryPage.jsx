@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getAllInventoryMovements, createInventoryMovement, getLowStockProducts, getInventorySummary } from '../services/inventoryService'
 import { getAllProducts, createProduct, updateProduct, deleteProduct } from '../services/productsService'
-import { BarcodeScanner } from '../components/BarcodeScanner'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function InventoryPage() {
@@ -30,7 +29,6 @@ export default function InventoryPage() {
   const [editingProductId, setEditingProductId] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [validationError, setValidationError] = useState('')
-  const [showScanner, setShowScanner] = useState(false)
   const [productFormData, setProductFormData] = useState({
     name: '',
     description: '',
@@ -197,21 +195,6 @@ export default function InventoryPage() {
     setShowProductForm(false)
   }
 
-  const handleBarcodeScanned = (barcode) => {
-    if (showProductForm) {
-      setProductFormData(prev => ({ ...prev, sku: barcode }))
-    } else {
-      const product = products.find(p => p.barcode === barcode || p.sku === barcode)
-      if (product) {
-        setSelectedProduct(product.id.toString())
-        setError('')
-      } else {
-        setError(`Código de barras "${barcode}" no encontrado`)
-      }
-    }
-    setShowScanner(false)
-  }
-
   const getMovementIcon = (type) => {
     switch (type) {
       case 'IN': return 'add_circle'
@@ -251,20 +234,12 @@ export default function InventoryPage() {
       {/* Header */}
       <header className="page-header">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
-            <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">warehouse</span>
+          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight flex items-center gap-2">
+            <span className="material-symbols-outlined text-[var(--accent-orange)] text-2xl sm:text-3xl">warehouse</span>
             <span>Control de Inventarios</span>
           </h1>
-          <p className="page-subtitle">Existencias físicas, valoración de stock y trazabilidad de kardex</p>
-        </div>
 
-        <button
-          onClick={() => activeTab === 'products' ? setShowProductForm(!showProductForm) : setShowMovementForm(!showMovementForm)}
-          className="btn-primary"
-        >
-          <span className="material-symbols-outlined">add</span>
-          <span>{activeTab === 'products' ? 'Nuevo Producto' : 'Registrar Movimiento'}</span>
-        </button>
+        </div>
       </header>
 
       {error && (
@@ -310,8 +285,8 @@ export default function InventoryPage() {
             <span className="material-symbols-outlined">warning</span>
             <span>Alertas de Stock Crítico ({lowStockProducts.length})</span>
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {lowStockProducts.slice(0, 3).map((product) => (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {lowStockProducts.slice(0, 8).map((product) => (
               <div key={product.id} className="p-3 rounded-xl bg-black/40 border border-red-500/30">
                 <p className="font-bold text-white text-sm m-0">{product.name}</p>
                 <p className="text-xs text-red-300 font-mono mt-1 m-0">
@@ -324,34 +299,44 @@ export default function InventoryPage() {
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex gap-3 border-b border-[var(--border-color)] pb-1">
+      <div className="flex gap-2 sm:gap-3 border-b border-[var(--border-color)] pb-1 overflow-x-auto\">
         <button
           onClick={() => {
             setActiveTab('products')
             setShowMovementForm(false)
           }}
-          className={`px-4 py-2.5 rounded-xl font-bold text-sm transition flex items-center gap-2 cursor-pointer ${
+          className={`px-3 sm:px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-1 sm:gap-2 cursor-pointer whitespace-nowrap ${
             activeTab === 'products'
               ? 'bg-[var(--accent-orange)]/15 text-[var(--accent-orange-light)] border border-[var(--accent-orange)]/30'
               : 'text-[var(--text-secondary)] hover:text-white'
           }`}
         >
-          <span className="material-symbols-outlined text-lg">inventory_2</span>
-          <span>Catálogo & Stock</span>
+          <span className="material-symbols-outlined text-base sm:text-lg">inventory_2</span>
+          <span className="hidden sm:inline">Catálogo & Stock</span>
+          <span className="sm:hidden">Productos</span>
         </button>
         <button
           onClick={() => {
             setActiveTab('movements')
             setShowProductForm(false)
           }}
-          className={`px-4 py-2.5 rounded-xl font-bold text-sm transition flex items-center gap-2 cursor-pointer ${
+          className={`px-3 sm:px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-1 sm:gap-2 cursor-pointer whitespace-nowrap ${
             activeTab === 'movements'
               ? 'bg-[var(--accent-orange)]/15 text-[var(--accent-orange-light)] border border-[var(--accent-orange)]/30'
               : 'text-[var(--text-secondary)] hover:text-white'
           }`}
         >
-          <span className="material-symbols-outlined text-lg">history</span>
-          <span>Kardex / Movimientos</span>
+          <span className="material-symbols-outlined text-base sm:text-lg">history</span>
+          <span className="hidden sm:inline">Kardex / Movimientos</span>
+          <span className="sm:hidden">Movimientos</span>
+        </button>
+        <button
+          onClick={() => activeTab === 'products' ? setShowProductForm(!showProductForm) : setShowMovementForm(!showMovementForm)}
+          className="btn-primary text-xs sm:text-sm ml-auto"
+        >
+          <span className="material-symbols-outlined">add</span>
+          <span className="hidden sm:inline">{activeTab === 'products' ? 'Nuevo Producto' : 'Registrar Movimiento'}</span>
+          <span className="sm:hidden">Nuevo</span>
         </button>
       </div>
 
@@ -360,8 +345,8 @@ export default function InventoryPage() {
         <>
           {showProductForm && (
             <div className="card">
-              <h3 className="text-lg font-extrabold text-white m-0 mb-4 pb-2 border-b border-[var(--border-color)]">
-                {editingProductId ? 'Editar Datos de Producto' : 'Nuevo Registro de Producto'}
+              <h3 className="text-lg sm:text-xl font-extrabold text-white m-0 mb-4 pb-2 border-b border-[var(--border-color)]">
+                {editingProductId ? 'Editar Producto' : 'Nuevo Producto'}
               </h3>
 
               <form onSubmit={handleProductSubmit} className="space-y-4">
@@ -373,32 +358,21 @@ export default function InventoryPage() {
                       name="name"
                       value={productFormData.name}
                       onChange={handleInputChange}
-                      placeholder="Ej: Impresora Térmica POS"
+                      placeholder=""
                       required
                     />
                   </div>
 
                   <div className="form-group">
                     <label>Código SKU / Barcode</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        name="sku"
-                        value={productFormData.sku}
-                        onChange={handleInputChange}
-                        placeholder="779000112233"
-                        className="flex-1 font-mono"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowScanner(true)}
-                        className="btn-secondary px-3 flex items-center justify-center gap-1"
-                        title="Escanear código de barras con la cámara del celular"
-                      >
-                        <span className="material-symbols-outlined text-lg text-[var(--accent-orange)]">qr_code_scanner</span>
-                        <span className="text-xs font-bold whitespace-nowrap">Cámara</span>
-                      </button>
-                    </div>
+                    <input
+                      type="text"
+                      name="sku"
+                      value={productFormData.sku}
+                      onChange={handleInputChange}
+                      placeholder=""
+                      className="font-mono"
+                    />
                   </div>
 
                   <div className="form-group">
@@ -424,6 +398,17 @@ export default function InventoryPage() {
                       className="font-mono"
                     />
                   </div>
+
+                  <div className="form-group">
+                    <label>Stock Mínimo</label>
+                    <input
+                      type="number"
+                      name="minimum_quantity"
+                      value={productFormData.minimum_quantity}
+                      onChange={handleInputChange}
+                      className="font-mono"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex gap-3 justify-end pt-3 border-t border-[var(--border-color)]">
@@ -442,56 +427,40 @@ export default function InventoryPage() {
             </div>
           )}
 
-          <div className="card flex items-center gap-3">
-            <span className="material-symbols-outlined text-[var(--accent-orange)]">search</span>
+          <div className="card flex items-center gap-2 sm:gap-3">
+            <span className="material-symbols-outlined text-[var(--accent-orange)] text-lg sm:text-xl flex-shrink-0">search</span>
             <input
               type="text"
-              placeholder="Filtrar por nombre o SKU..."
+              placeholder=""
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-transparent border-none outline-none text-white text-sm"
+              className="w-full bg-transparent border-none outline-none text-white text-xs sm:text-sm"
             />
           </div>
 
-          <div className="table-wrapper">
-            <table className="custom-table">
+          <div className="table-wrapper overflow-x-auto">
+            <table className="custom-table w-full">
               <thead>
                 <tr>
-                  <th>Producto</th>
-                  <th>SKU</th>
-                  <th className="text-right">Precio</th>
-                  <th className="text-right">Stock</th>
-                  <th className="text-center">Acciones</th>
+                  <th className="text-left px-2 text-xs sm:text-sm">Producto</th>
+                  <th className="text-left px-2 text-xs sm:text-sm">SKU</th>
+                  <th className="hidden md:table-cell text-right px-2 text-xs sm:text-sm">Precio</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredProducts.map((product) => (
-                  <tr key={product.id}>
-                    <td className="font-bold text-white">{product.name}</td>
-                    <td className="sku-cell">{product.sku || 'SKU-000'}</td>
-                    <td className="text-right font-mono font-bold text-[var(--accent-orange-light)]">
+                  <tr key={product.id} className="hover:bg-white/5 transition-colors">
+                    <td className="font-bold text-white px-2 py-3 text-xs sm:text-sm truncate">
+                      <button
+                        onClick={() => handleEditProduct(product)}
+                        className="hover:text-[var(--accent-orange-light)] transition-colors text-left w-full"
+                      >
+                        {product.name}
+                      </button>
+                    </td>
+                    <td className="sku-cell px-2 py-3 text-xs sm:text-sm font-mono">{product.sku || 'SKU-000'}</td>
+                    <td className="hidden md:table-cell text-right font-mono font-bold text-[var(--accent-orange-light)] px-2 py-3 text-xs sm:text-sm">
                       ${product.price?.toFixed(2) || '0.00'}
-                    </td>
-                    <td className="text-right font-mono">
-                      <span className={`badge ${product.quantity < (product.minimum_quantity || 10) ? 'badge-danger' : 'badge-success'}`}>
-                        {product.quantity || 0} un.
-                      </span>
-                    </td>
-                    <td className="text-center">
-                      <div className="flex justify-center gap-2">
-                        <button
-                          onClick={() => handleEditProduct(product)}
-                          className="btn-secondary btn-small"
-                        >
-                          <span className="material-symbols-outlined text-sm">edit</span>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteProduct(product.id)}
-                          className="btn-danger btn-small"
-                        >
-                          <span className="material-symbols-outlined text-sm">delete</span>
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))}
@@ -506,7 +475,7 @@ export default function InventoryPage() {
         <>
           {showMovementForm && (
             <div className="card">
-              <h3 className="text-lg font-extrabold text-white m-0 mb-4 pb-2 border-b border-[var(--border-color)]">
+              <h3 className="text-lg sm:text-xl font-extrabold text-white m-0 mb-4 pb-2 border-b border-[var(--border-color)]">
                 Registrar Movimiento de Kardex
               </h3>
 
@@ -514,28 +483,17 @@ export default function InventoryPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="form-group">
                     <label>Producto</label>
-                    <div className="flex gap-2">
-                      <select
-                        value={selectedProduct}
-                        onChange={(e) => setSelectedProduct(e.target.value)}
-                        className="flex-1"
-                      >
-                        <option value="">-- Selecciona --</option>
-                        {products.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name} (Stock: {p.quantity || 0})
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        onClick={() => setShowScanner(true)}
-                        className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition flex items-center gap-2"
-                        title="Escanear código de barras"
-                      >
-                        <span className="material-symbols-outlined">qr_code_scanner</span>
-                      </button>
-                    </div>
+                    <select
+                      value={selectedProduct}
+                      onChange={(e) => setSelectedProduct(e.target.value)}
+                    >
+                      <option value="">-- Selecciona --</option>
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} (Stock: {p.quantity || 0})
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="form-group">
@@ -569,7 +527,7 @@ export default function InventoryPage() {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows="2"
-                    placeholder="Factura de compra #, Ajuste por merma, etc."
+                    placeholder=""
                   />
                 </div>
 
@@ -634,13 +592,6 @@ export default function InventoryPage() {
         </>
       )}
 
-      {/* Barcode Scanner Modal */}
-      {showScanner && (
-        <BarcodeScanner
-          onScan={handleBarcodeScanned}
-          onClose={() => setShowScanner(false)}
-        />
-      )}
     </div>
   )
 }

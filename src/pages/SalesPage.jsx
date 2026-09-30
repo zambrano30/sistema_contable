@@ -1,10 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { getAllProducts } from '../services/productsService'
-import { getAllClients } from '../services/clientsService'
+import { getAllClients, createClient } from '../services/clientsService'
 import { createInvoice } from '../services/invoicesService'
-import { BarcodeScanner } from '../components/BarcodeScanner'
 import { useAuth } from '../contexts/AuthContext'
-import { SkillBadge } from '../components/SkillBadge'
 
 export default function SalesPage() {
   const { user } = useAuth()
@@ -34,25 +32,27 @@ export default function SalesPage() {
 
   // Search states
   const [clientSearchQuery, setClientSearchQuery] = useState('')
-  const [barcodeSearch, setBarcodeSearch] = useState('')
+  const [productSearchQuery, setProductSearchQuery] = useState('')
   const [filteredClients, setFilteredClients] = useState([])
-  
-  // Product catalog modal
   const [showProductCatalog, setShowProductCatalog] = useState(false)
-  const [catalogSearchQuery, setCatalogSearchQuery] = useState('')
-  const [catalogPage, setCatalogPage] = useState(1)
-  const catalogPageSize = 20
   
   // Client modal
   const [showClientModal, setShowClientModal] = useState(false)
   const [clientModalSearchQuery, setClientModalSearchQuery] = useState('')
   const [clientModalPage, setClientModalPage] = useState(1)
   const clientModalPageSize = 20
-
-  // Barcode Scanner
-  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false)
   
-  const barcodeInputRef = useRef(null)
+  // Create client form in modal
+  const [showCreateClientForm, setShowCreateClientForm] = useState(false)
+  const [newClientForm, setNewClientForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    tax_id: '',
+  })
+  const [errorCreatingClient, setErrorCreatingClient] = useState('')
+
   const draftRestoredRef = useRef(false)
   const draftStorageKey = `sales_invoice_draft_${user?.id || 'guest'}`
 
@@ -140,16 +140,12 @@ export default function SalesPage() {
     setFilteredClients(filtered)
   }, [clientSearchQuery, clients])
 
-  useEffect(() => {
-    if (!barcodeSearch.trim()) return
-
-    const product = products.find(p => p.barcode === barcodeSearch)
-    if (product) {
-      setItemProduct(product.id.toString())
-      setItemQuantity('1')
-      setBarcodeSearch('')
-    }
-  }, [barcodeSearch])
+  const productSearchTerm = productSearchQuery.trim().toLocaleLowerCase()
+  const productSuggestions = productSearchTerm
+    ? products
+      .filter(product => product.name?.toLocaleLowerCase().includes(productSearchTerm))
+      .slice(0, 8)
+    : []
 
   const loadData = async () => {
     setLoading(true)
@@ -203,11 +199,10 @@ export default function SalesPage() {
     setItemDiscount('')
   }
 
-  const handleProductSelect = (e) => {
-    const productId = e.target.value
+  const handleProductSelect = (productId) => {
     if (!productId) return
 
-    const product = products.find(p => p.id === parseInt(productId))
+    const product = products.find(p => String(p.id) === String(productId))
     if (!product) return
 
     const existingItem = invoiceItems.find(item => item.product_id === product.id)
@@ -234,21 +229,6 @@ export default function SalesPage() {
         },
       ])
     }
-
-    setItemProduct('')
-  }
-
-  const handleBarcodeScanned = (barcode) => {
-    // Buscar producto por código de barras
-    const product = products.find(p => p.barcode === barcode)
-    if (product) {
-      handleProductSelect({ target: { value: product.id.toString() } })
-    } else {
-      setError(`Código de barras "${barcode}" no encontrado`)
-    }
-    setShowBarcodeScanner(false)
-    // Enfocar el input de código de barras después de cerrar el scanner
-    setTimeout(() => barcodeInputRef.current?.focus(), 100)
   }
 
   const updateInvoiceItemQuantity = (index, newQuantity) => {
@@ -280,6 +260,11 @@ export default function SalesPage() {
     setInvoiceItems(updatedItems)
   }
 
+  const adjustInvoiceItemQuantity = (index, change) => {
+    const quantity = Number(invoiceItems[index]?.quantity) || 0
+    updateInvoiceItemQuantity(index, Math.max(1, quantity + change))
+  }
+
   const removeInvoiceItem = (index) => {
     setInvoiceItems(invoiceItems.filter((_, i) => i !== index))
   }
@@ -306,6 +291,52 @@ export default function SalesPage() {
     const month = String(today.getMonth() + 1).padStart(2, '0')
     const day = String(today.getDate()).padStart(2, '0')
     return `${today.getFullYear()}-${month}-${day}`
+  }
+
+  const handleCreateClient = async (e) => {
+    e.preventDefault()
+    setErrorCreatingClient('')
+
+    if (!newClientForm.name.trim()) {
+      setErrorCreatingClient('El nombre del cliente es requerido')
+      return
+    }
+
+    const clientData = {
+      name: newClientForm.name.trim(),
+      email: newClientForm.email.trim(),
+      phone: newClientForm.phone.trim(),
+      address: newClientForm.address.trim(),
+      tax_id: newClientForm.tax_id.trim(),
+      cedula_ruc: newClientForm.tax_id.trim(),
+    }
+
+    const result = await createClient(clientData)
+    
+    if (result.ok) {
+      // Reload clients
+      const clientsRes = await getAllClients()
+      if (clientsRes.ok) {
+        setClients(clientsRes.data)
+        // Auto-select the new client
+        if (result.data?.id) {
+          setSelectedClient(result.data.id.toString())
+        }
+      }
+      
+      // Reset form
+      setNewClientForm({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        tax_id: '',
+      })
+      setShowCreateClientForm(false)
+      setShowClientModal(false)
+    } else {
+      setErrorCreatingClient(result.error || 'Error al crear el cliente')
+    }
   }
 
   const handleCreateInvoice = async (e) => {
@@ -386,22 +417,12 @@ export default function SalesPage() {
 
   return (
     <div className="page-container">
-      {/* Header */}
       <header className="page-header">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2 m-0 font-heading">
-              <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">point_of_sale</span>
-              <span>Punto de Venta POS</span>
-            </h1>
-            <SkillBadge label="Ultra-Fast POS" variant="pro" size="sm" pulse={true} icon="bolt" />
-          </div>
-          <p className="page-subtitle">Emisión directa de facturas de venta, escaneo y cobro rápido</p>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <SkillBadge label="SRI Direct Sync" variant="sri" size="sm" icon="verified" />
-          <SkillBadge label="Scanner EAN/QR" variant="sync" size="sm" icon="qr_code_scanner" />
+          <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2 m-0 font-heading">
+            <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">point_of_sale</span>
+            <span>Ventas</span>
+          </h1>
         </div>
       </header>
 
@@ -487,7 +508,7 @@ export default function SalesPage() {
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-color)]">
               <h3 className="text-base font-extrabold m-0 text-[var(--text-primary)] flex items-center gap-2">
                 <span className="material-symbols-outlined text-[var(--accent-orange)]">inventory_2</span>
-                <span>Catálogo de Productos y Código de Barras</span>
+                <span>Productos</span>
               </h3>
               <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-[var(--text-secondary)]">
                 <input
@@ -504,53 +525,17 @@ export default function SalesPage() {
             </div>
 
             {!useSimpleInvoice ? (
-              <div className="flex gap-4">
-                <div className="form-group flex-1">
-                  <label>Escanear</label>
-                  <div className="relative">
-                    <input
-                      ref={barcodeInputRef}
-                      type="text"
-                      value={barcodeSearch}
-                      onChange={(e) => {
-                        const query = e.target.value
-                        setBarcodeSearch(query)
-                        
-                        // Si encuentra por código de barras, lo agrega automáticamente
-                        const productByBarcode = products.find(p => p.barcode === query)
-                        if (productByBarcode) {
-                          handleProductSelect({ target: { value: productByBarcode.id.toString() } })
-                          setBarcodeSearch('')
-                          // Devuelve el foco al input
-                          setTimeout(() => barcodeInputRef.current?.focus(), 0)
-                        }
-                      }}
-                      className="pl-14 pr-4 w-full"
-                      autoFocus
-                    />
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-tertiary)]">qr_code_scanner</span>
-                  </div>
-                </div>
-                
-                <div className="flex items-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowBarcodeScanner(true)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition flex items-center gap-2 h-12"
-                    title="Escanear código con cámara o lector"
-                  >
-                    <span className="material-symbols-outlined">qr_code_scanner</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowProductCatalog(true)}
-                    className="px-6 py-2 bg-[var(--accent-orange)] hover:bg-orange-600 text-white font-bold rounded-xl transition flex items-center gap-2 h-12"
-                  >
-                    <span className="material-symbols-outlined">store</span>
-                    <span>Catálogo</span>
-                  </button>
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setProductSearchQuery('')
+                  setShowProductCatalog(true)
+                }}
+                className="btn-secondary w-full justify-center sm:w-auto"
+              >
+                <span className="material-symbols-outlined" aria-hidden="true">search</span>
+                <span>Buscar productos</span>
+              </button>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="form-group">
@@ -575,122 +560,94 @@ export default function SalesPage() {
             )}
           </div>
 
-          {/* Product Catalog Modal */}
-          {showProductCatalog && (() => {
-            // Filtrar productos
-            const filteredProducts = products.filter(p =>
-              (p.name && p.name.toLowerCase().includes(catalogSearchQuery.toLowerCase())) ||
-              (p.barcode && p.barcode.includes(catalogSearchQuery))
-            )
-            
-            // Calcular paginación
-            const totalPages = Math.ceil(filteredProducts.length / catalogPageSize)
-            const startIndex = (catalogPage - 1) * catalogPageSize
-            const paginatedProducts = filteredProducts.slice(startIndex, startIndex + catalogPageSize)
-            
-            return (
-              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                <div className="bg-[var(--bg-secondary)] rounded-2xl w-full max-w-3xl max-h-[80vh] overflow-auto border border-[var(--border-color)] flex flex-col">
-                  {/* Header */}
-                  <div className="sticky top-0 bg-[var(--bg-secondary)] border-b border-[var(--border-color)] p-6 space-y-5">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-xl font-extrabold text-[var(--text-primary)] flex items-center gap-3">
-                        <span className="material-symbols-outlined text-[var(--accent-orange)]">store</span>
-                        Catálogo de Productos ({filteredProducts.length})
-                      </h2>
-                      <button
-                        onClick={() => {
-                          setShowProductCatalog(false)
-                          setCatalogSearchQuery('')
-                          setCatalogPage(1)
-                        }}
-                        className="text-[var(--text-tertiary)] hover:text-white transition"
-                      >
-                        <span className="material-symbols-outlined text-2xl">close</span>
-                      </button>
-                    </div>
-                    
-                    {/* Search Input */}
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={catalogSearchQuery}
-                        onChange={(e) => {
-                          setCatalogSearchQuery(e.target.value)
-                          setCatalogPage(1) // Reset a página 1
-                        }}
-                        className="pl-14 pr-4 w-full"
-                      />
-                      <span className="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-tertiary)]">search</span>
-                    </div>
-                  </div>
+          {showProductCatalog && (
+            <div
+              className="sales-product-modal-overlay fixed inset-0 z-50 flex items-start justify-center bg-black/60 px-4 pb-4"
+              onClick={(event) => {
+                if (event.target === event.currentTarget) {
+                  setShowProductCatalog(false)
+                  setProductSearchQuery('')
+                }
+              }}
+            >
+              <section
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="sales-product-dialog-title"
+                className="flex max-h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] shadow-2xl"
+              >
+                <header className="flex items-center justify-between gap-4 border-b border-[var(--border-color)] p-4 sm:p-5">
+                  <h2 id="sales-product-dialog-title" className="m-0 text-lg font-bold text-[var(--text-primary)]">Buscar productos</h2>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowProductCatalog(false)
+                      setProductSearchQuery('')
+                    }}
+                    className="rounded-lg p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                    aria-label="Cerrar búsqueda de productos"
+                  >
+                    <span className="material-symbols-outlined" aria-hidden="true">close</span>
+                  </button>
+                </header>
 
-                  {/* Product List */}
-                  <div className="flex-1 overflow-y-auto divide-y divide-[var(--border-color)]">
-                    {filteredProducts.length === 0 ? (
-                      <p className="text-center text-[var(--text-tertiary)] py-12">No se encontraron productos</p>
-                    ) : paginatedProducts.length === 0 ? (
-                      <p className="text-center text-[var(--text-tertiary)] py-12">No hay productos en esta página</p>
-                    ) : (
-                      paginatedProducts.map((p) => (
-                        <button
-                          key={p.id}
-                          onClick={() => {
-                            handleProductSelect({ target: { value: p.id.toString() } })
-                            setShowProductCatalog(false)
-                            setCatalogSearchQuery('')
-                            setCatalogPage(1)
-                            // Devuelve el foco al input de escaneo
-                            setTimeout(() => barcodeInputRef.current?.focus(), 0)
-                          }}
-                          className="w-full text-left p-5 hover:bg-[var(--bg-primary)] transition flex items-center justify-between gap-4"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-white text-sm truncate">{p.name}</p>
-                            <p className="text-xs text-[var(--text-tertiary)] truncate">Código: {p.barcode || 'N/A'}</p>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <p className="font-bold text-[var(--accent-orange)] text-base">${p.price?.toFixed(2)}</p>
-                            <p className="text-xs text-[var(--text-secondary)]">Stock: {p.stock || '0'}</p>
-                          </div>
-                        </button>
-                      ))
+                <div className="border-b border-[var(--border-color)] p-4 sm:p-5">
+                  <label htmlFor="sales-product-search" className="mb-2 block text-sm font-semibold text-[var(--text-secondary)]">Nombre del producto</label>
+                  <div className="relative">
+                    <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" aria-hidden="true">search</span>
+                    <input
+                      id="sales-product-search"
+                      type="search"
+                      autoComplete="off"
+                      value={productSearchQuery}
+                      onChange={(event) => setProductSearchQuery(event.target.value)}
+                      placeholder=""
+                      aria-controls="sales-product-results"
+                      aria-expanded={productSearchTerm.length > 0}
+                      className="h-12 w-full pl-11 pr-12 text-base"
+                    />
+                    {productSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setProductSearchQuery('')}
+                        className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                        aria-label="Limpiar búsqueda"
+                      >
+                        <span className="material-symbols-outlined" aria-hidden="true">close</span>
+                      </button>
                     )}
                   </div>
+                </div>
 
-                  {/* Pagination Controls */}
-                  {filteredProducts.length > 0 && totalPages > 1 && (
-                    <div className="sticky bottom-0 bg-[var(--bg-primary)] border-t border-[var(--border-color)] p-5 flex items-center justify-between gap-4">
-                      <p className="text-xs text-[var(--text-secondary)]">
-                        Mostrando {startIndex + 1}-{Math.min(startIndex + catalogPageSize, filteredProducts.length)} de {filteredProducts.length}
-                      </p>
-                      <div className="flex gap-3 items-center">
-                        <button
-                          onClick={() => setCatalogPage(Math.max(1, catalogPage - 1))}
-                          disabled={catalogPage === 1}
-                          className="p-2 bg-[var(--bg-secondary)] hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition"
-                          title="Página anterior"
-                        >
-                          <span className="material-symbols-outlined text-lg">chevron_left</span>
-                        </button>
-                        <span className="px-4 py-2 text-white text-sm font-bold min-w-max">
-                          {catalogPage} / {totalPages}
+                <div id="sales-product-results" className="min-h-24 flex-1 overflow-y-auto">
+                  {!productSearchTerm ? (
+                    <p className="px-4 py-6 text-sm text-[var(--text-secondary)] sm:px-5">Escribe el nombre para ver productos.</p>
+                  ) : productSuggestions.length === 0 ? (
+                    <p className="px-4 py-6 text-sm text-[var(--text-secondary)] sm:px-5">No se encontraron productos.</p>
+                  ) : (
+                    productSuggestions.map((product) => (
+                      <button
+                        key={product.id}
+                        type="button"
+                        onClick={() => {
+                          handleProductSelect(product.id)
+                          setProductSearchQuery('')
+                          setShowProductCatalog(false)
+                        }}
+                        className="flex w-full items-center justify-between gap-4 border-b border-[var(--border-color)] px-4 py-3 text-left transition hover:bg-[var(--bg-hover)] sm:px-5"
+                      >
+                        <span className="min-w-0 truncate font-semibold text-[var(--text-primary)]">{product.name}</span>
+                        <span className="shrink-0 text-right text-sm">
+                          <span className="font-bold text-[var(--accent-orange)]">${Number(product.price || 0).toFixed(2)}</span>
+                          <span className="ml-2 text-[var(--text-secondary)]">Stock: {product.quantity ?? 0}</span>
                         </span>
-                        <button
-                          onClick={() => setCatalogPage(Math.min(totalPages, catalogPage + 1))}
-                          disabled={catalogPage === totalPages}
-                          className="p-2 bg-[var(--bg-secondary)] hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition"
-                          title="Próxima página"
-                        >
-                          <span className="material-symbols-outlined text-lg">chevron_right</span>
-                        </button>
-                      </div>
-                    </div>
+                      </button>
+                    ))
                   )}
                 </div>
-              </div>
-            )
-          })()}
+              </section>
+            </div>
+          )}
 
           {/* Client Modal */}
           {showClientModal && (() => {
@@ -714,16 +671,27 @@ export default function SalesPage() {
                         <span className="material-symbols-outlined text-[var(--accent-orange)]">person</span>
                         Seleccionar Cliente ({filteredClientsModal.length})
                       </h2>
-                      <button
-                        onClick={() => {
-                          setShowClientModal(false)
-                          setClientModalSearchQuery('')
-                          setClientModalPage(1)
-                        }}
-                        className="text-[var(--text-tertiary)] hover:text-white transition"
-                      >
-                        <span className="material-symbols-outlined text-2xl">close</span>
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setShowCreateClientForm(!showCreateClientForm)}
+                          className="btn-primary btn-small"
+                          title="Crear nuevo cliente"
+                        >
+                          <span className="material-symbols-outlined text-sm">person_add</span>
+                          <span className="text-xs hidden sm:inline">Crear</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowClientModal(false)
+                            setClientModalSearchQuery('')
+                            setClientModalPage(1)
+                            setShowCreateClientForm(false)
+                          }}
+                          className="text-[var(--text-tertiary)] hover:text-white transition"
+                        >
+                          <span className="material-symbols-outlined text-2xl">close</span>
+                        </button>
+                      </div>
                     </div>
                     
                     {/* Search Input */}
@@ -741,9 +709,109 @@ export default function SalesPage() {
                     </div>
                   </div>
 
+                  {/* Create Client Form */}
+                  {showCreateClientForm && (
+                    <div className="border-b border-[var(--border-color)] p-6 bg-[var(--bg-primary)]">
+                      <h3 className="text-lg font-extrabold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[var(--accent-orange)]">person_add</span>
+                        Crear Nuevo Cliente
+                      </h3>
+                      
+                      {errorCreatingClient && (
+                        <div className="error-message mb-4 flex items-center gap-2 text-sm">
+                          <span className="material-symbols-outlined text-lg">error</span>
+                          <span>{errorCreatingClient}</span>
+                        </div>
+                      )}
+
+                      <form onSubmit={handleCreateClient} className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-bold text-[var(--text-primary)] mb-2">Nombre *</label>
+                          <input
+                            type="text"
+                            value={newClientForm.name}
+                            onChange={(e) => setNewClientForm({...newClientForm, name: e.target.value})}
+                            placeholder=""
+                            className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] text-sm"
+                            required
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-bold text-[var(--text-primary)] mb-2">RUC / Cédula</label>
+                            <input
+                              type="text"
+                              value={newClientForm.tax_id}
+                              onChange={(e) => setNewClientForm({...newClientForm, tax_id: e.target.value})}
+                              placeholder=""
+                              className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-bold text-[var(--text-primary)] mb-2">Email</label>
+                            <input
+                              type="email"
+                              value={newClientForm.email}
+                              onChange={(e) => setNewClientForm({...newClientForm, email: e.target.value})}
+                              placeholder=""
+                              className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] text-sm"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-bold text-[var(--text-primary)] mb-2">Teléfono</label>
+                            <input
+                              type="tel"
+                              value={newClientForm.phone}
+                              onChange={(e) => setNewClientForm({...newClientForm, phone: e.target.value})}
+                              placeholder=""
+                              className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-bold text-[var(--text-primary)] mb-2">Dirección</label>
+                            <input
+                              type="text"
+                              value={newClientForm.address}
+                              onChange={(e) => setNewClientForm({...newClientForm, address: e.target.value})}
+                              placeholder=""
+                              className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] text-sm"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex gap-3 justify-end pt-4 border-t border-[var(--border-color)]">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowCreateClientForm(false)
+                              setNewClientForm({name: '', email: '', phone: '', address: '', tax_id: ''})
+                              setErrorCreatingClient('')
+                            }}
+                            className="btn-secondary btn-small"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="submit"
+                            className="btn-primary btn-small"
+                          >
+                            <span className="material-symbols-outlined text-sm">save</span>
+                            <span>Crear Cliente</span>
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
                   {/* Client List */}
                   <div className="flex-1 overflow-y-auto divide-y divide-[var(--border-color)]">
-                    {filteredClientsModal.length === 0 ? (
+                    {showCreateClientForm ? (
+                      <p className="text-center text-[var(--text-tertiary)] py-8 text-sm">Complete el formulario para crear un nuevo cliente</p>
+                    ) : filteredClientsModal.length === 0 ? (
                       <p className="text-center text-[var(--text-tertiary)] py-12">No se encontraron clientes</p>
                     ) : paginatedClients.length === 0 ? (
                       <p className="text-center text-[var(--text-tertiary)] py-12">No hay clientes en esta página</p>
@@ -756,6 +824,7 @@ export default function SalesPage() {
                             setShowClientModal(false)
                             setClientModalSearchQuery('')
                             setClientModalPage(1)
+                            setShowCreateClientForm(false)
                           }}
                           className="w-full text-left p-5 hover:bg-[var(--bg-primary)] transition flex items-center justify-between gap-4"
                         >
@@ -809,7 +878,7 @@ export default function SalesPage() {
           {/* Cart Items Table */}
           {!useSimpleInvoice && (
             <div className="table-wrapper">
-              <table className="custom-table">
+              <table className="custom-table sales-cart-table" aria-label="Productos seleccionados para la factura">
                 <thead>
                   <tr>
                     <th>Producto</th>
@@ -821,7 +890,7 @@ export default function SalesPage() {
                 </thead>
                 <tbody>
                   {invoiceItems.length === 0 ? (
-                    <tr>
+                    <tr className="sales-cart-empty-row">
                       <td colSpan="5" className="text-center py-10 text-[var(--text-tertiary)]">
                         <span className="material-symbols-outlined text-4xl block mb-2 opacity-50">shopping_cart</span>
                         <span>No has agregado productos a la factura aún</span>
@@ -829,29 +898,48 @@ export default function SalesPage() {
                     </tr>
                   ) : (
                     invoiceItems.map((item, idx) => (
-                      <tr key={idx}>
+                      <tr key={idx} className="sales-cart-row">
                         <td className="font-bold text-white">{item.product_name}</td>
-                        <td className="text-center">
-                          <input
-                            type="number"
-                            min="1"
-                            step="1"
-                            inputMode="numeric"
-                            value={item.quantity}
-                            onChange={(e) => updateInvoiceItemQuantity(idx, e.target.value)}
-                            className="quantity-input w-20 text-center font-mono"
-                            aria-label={`Cantidad de ${item.product_name}`}
-                          />
+                        <td className="text-center" data-label="Cantidad">
+                          <div className="quantity-control">
+                            <button
+                              type="button"
+                              className="quantity-stepper"
+                              onClick={() => adjustInvoiceItemQuantity(idx, -1)}
+                              aria-label={`Restar una unidad de ${item.product_name}`}
+                            >
+                              <span className="material-symbols-outlined" aria-hidden="true">remove</span>
+                            </button>
+                            <input
+                              type="number"
+                              min="1"
+                              step="1"
+                              inputMode="numeric"
+                              value={item.quantity}
+                              onChange={(e) => updateInvoiceItemQuantity(idx, e.target.value)}
+                              className="quantity-input text-center font-mono"
+                              aria-label={`Cantidad de ${item.product_name}`}
+                            />
+                            <button
+                              type="button"
+                              className="quantity-stepper"
+                              onClick={() => adjustInvoiceItemQuantity(idx, 1)}
+                              aria-label={`Sumar una unidad de ${item.product_name}`}
+                            >
+                              <span className="material-symbols-outlined" aria-hidden="true">add</span>
+                            </button>
+                          </div>
                         </td>
-                        <td className="text-right font-mono">${item.unit_price?.toFixed(2)}</td>
-                        <td className="text-right font-mono font-bold text-[var(--accent-orange-light)]">
+                        <td className="text-right font-mono" data-label="Precio unitario">${item.unit_price?.toFixed(2)}</td>
+                        <td className="text-right font-mono font-bold text-[var(--accent-orange-light)]" data-label="Total">
                           ${(item.unit_price * item.quantity).toFixed(2)}
                         </td>
-                        <td className="text-center">
+                        <td className="text-center" data-label="Quitar">
                           <button
                             type="button"
                             onClick={() => removeInvoiceItem(idx)}
                             className="text-red-400 hover:text-red-300 p-1"
+                            aria-label={`Quitar ${item.product_name}`}
                           >
                             <span className="material-symbols-outlined text-lg">delete</span>
                           </button>
@@ -867,23 +955,30 @@ export default function SalesPage() {
 
         {/* Right Column: Checkout & Summary Sidebar */}
         <div className="sales-summary-shell w-full">
-          <div className="sales-summary-card card bg-gradient-to-b from-[#182030] to-[#121721] border border-white/10 flex flex-col justify-between w-full">
-            <h3 className="text-lg font-extrabold m-0 mb-4 pb-3 border-b border-[var(--border-color)] text-[var(--text-primary)] flex items-center justify-between">
-              <span>Resumen de Cobro</span>
-              <span className="material-symbols-outlined text-[var(--accent-orange)]">receipt_long</span>
-            </h3>
+          <div className="sales-summary-card card bg-gradient-to-b from-[#1a2633] via-[#141d2a] to-[#0f1419] border border-white/10 backdrop-blur-sm flex flex-col justify-between w-full rounded-2xl shadow-2xl">
+            <div className="p-6 border-b border-white/5">
+              <h3 className="text-xl font-extrabold m-0 text-[var(--text-primary)]">
+                Resumen de Cobro
+              </h3>
+            </div>
 
-            <div className="space-y-3 font-mono text-sm flex-1 overflow-hidden">
-              <div className="form-group font-sans mb-4">
-                <label htmlFor="payment-method">Método de pago</label>
-                <select id="payment-method" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+            <div className="px-6 py-4 space-y-4 flex-1 overflow-hidden">
+              <div className="form-group font-sans">
+                <label htmlFor="payment-method" className="text-sm font-semibold text-[var(--text-secondary)] mb-2 block">Método de pago</label>
+                <select 
+                  id="payment-method" 
+                  value={paymentMethod} 
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:border-[var(--accent-orange)] focus:outline-none transition-all"
+                >
                   <option value="cash">Efectivo</option>
                   <option value="transfer">Transferencia</option>
                 </select>
               </div>
+              
               {!useSimpleInvoice && (
-                <div className="form-group font-sans mb-4">
-                  <label htmlFor="invoice-discount">Descuento especial ($)</label>
+                <div className="form-group font-sans">
+                  <label htmlFor="invoice-discount" className="text-sm font-semibold text-[var(--text-secondary)] mb-2 block">Descuento especial ($)</label>
                   <input
                     id="invoice-discount"
                     type="number"
@@ -892,46 +987,58 @@ export default function SalesPage() {
                     inputMode="decimal"
                     value={discountAmount}
                     onChange={(e) => setDiscountAmount(e.target.value)}
-                    placeholder="0.00"
+                    placeholder=""
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:border-[var(--accent-orange)] focus:outline-none transition-all"
                   />
                 </div>
               )}
-              <div className="flex justify-between text-[var(--text-secondary)]">
-                <span>Subtotal Neto:</span>
-                <span className="font-bold text-white">${subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-[var(--text-secondary)]">
-                <span>Descuento Aplicado:</span>
-                <span className="font-bold text-white">
-                  ${(useSimpleInvoice ? parseFloat(simpleDiscount) || 0 : parseFloat(discountAmount) || 0).toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between text-[var(--text-secondary)]">
-                <span>Impuesto IVA (15%):</span>
-                <span className="font-bold text-emerald-400">$0.00</span>
+
+              <div className="space-y-3 pt-2">
+                <div className="flex justify-between items-center bg-white/5 rounded-lg px-4 py-3 border border-white/5">
+                  <span className="text-sm font-medium text-[var(--text-secondary)]">Subtotal Neto:</span>
+                  <span className="font-bold text-white text-lg">${subtotal.toFixed(2)}</span>
+                </div>
+                
+                <div className="flex justify-between items-center bg-white/5 rounded-lg px-4 py-3 border border-white/5">
+                  <span className="text-sm font-medium text-[var(--text-secondary)]">Descuento Aplicado:</span>
+                  <span className="font-bold text-[#ff6b35] text-lg">
+                    -${(useSimpleInvoice ? parseFloat(simpleDiscount) || 0 : parseFloat(discountAmount) || 0).toFixed(2)}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center bg-white/5 rounded-lg px-4 py-3 border border-white/5">
+                  <span className="text-sm font-medium text-[var(--text-secondary)]">Impuesto IVA (15%):</span>
+                  <span className="font-bold text-emerald-400 text-lg">$0.00</span>
+                </div>
               </div>
 
-              <div className="pt-4 mt-2 border-t-2 border-[var(--accent-orange)] flex justify-between items-baseline">
-                <span className="text-base font-bold text-white font-sans uppercase">TOTAL FINAL:</span>
-                <span className="text-3xl font-extrabold text-[var(--accent-orange)]">${total.toFixed(2)}</span>
+              <div className="relative mt-4 pt-4">
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent-orange)]/50 to-transparent"></div>
+                <div className="bg-gradient-to-r from-[var(--accent-orange)]/10 to-[#ff7b00]/10 rounded-xl px-4 py-4 border border-[var(--accent-orange)]/20">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest">Total Final:</span>
+                    <span className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-orange)] to-[#ff7b00]">
+                      ${total.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="mt-6 space-y-3">
+            <div className="px-6 py-4 space-y-2.5 border-t border-white/5">
               <button
                 type="button"
                 onClick={handleCreateInvoice}
                 disabled={(!useSimpleInvoice && invoiceItems.length === 0) || (!selectedClient && !isConsumerFinal)}
-                className="btn-primary w-full py-4 text-base shadow-xl disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                className="btn-primary w-full py-3.5 text-base font-semibold shadow-xl shadow-[var(--accent-orange)]/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer rounded-lg transition-all hover:shadow-lg hover:shadow-[var(--accent-orange)]/40"
               >
-                <span className="material-symbols-outlined text-2xl">check_circle</span>
-                <span>Emitir Factura Electrónica</span>
+                Emitir Factura Electrónica
               </button>
 
               <button
                 type="button"
                 onClick={resetForm}
-                className="btn-secondary w-full py-2.5 text-xs text-[var(--text-tertiary)] hover:text-white"
+                className="w-full py-2.5 px-4 text-sm font-medium text-[var(--text-tertiary)] hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-lg transition-all"
               >
                 Limpiar Formulario
               </button>
@@ -940,13 +1047,6 @@ export default function SalesPage() {
         </div>
       </div>
 
-      {/* Barcode Scanner Modal */}
-      {showBarcodeScanner && (
-        <BarcodeScanner
-          onScan={handleBarcodeScanned}
-          onClose={() => setShowBarcodeScanner(false)}
-        />
-      )}
     </div>
   )
 }

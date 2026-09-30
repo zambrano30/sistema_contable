@@ -164,13 +164,10 @@ export default function AdminPage() {
               <span className="material-symbols-outlined text-[var(--accent-orange)] text-3xl">admin_panel_settings</span>
               <span>Administración del Sistema</span>
             </h1>
-            <SkillBadge label="RLS Security 100%" variant="sri" size="sm" pulse={true} icon="shield" />
           </div>
-          <p className="page-subtitle">Gestión de accesos, roles de usuarios, permisos RLS y personal de caja/cocina</p>
         </div>
 
         <div className="flex items-center gap-3">
-          <SkillBadge label="Supabase Auth" variant="sync" size="sm" icon="lock" />
           <button
             onClick={() => setShowForm(!showForm)}
             className="btn-primary"
@@ -240,20 +237,20 @@ export default function AdminPage() {
                 <form onSubmit={handleCreateCook} className="space-y-4">
                   <div className="form-group">
                     <label>Nombre Completo</label>
-                    <input type="text" value={cookName} onChange={(e) => setCookName(e.target.value)} placeholder="Ej: Mario Rossi" required />
+                    <input type="text" value={cookName} onChange={(e) => setCookName(e.target.value)} placeholder="" required />
                   </div>
                   <div className="form-group">
                     <label>Correo Electrónico</label>
-                    <input type="email" value={cookEmail} onChange={(e) => setCookEmail(e.target.value)} placeholder="cocina@empresa.com" required />
+                    <input type="email" value={cookEmail} onChange={(e) => setCookEmail(e.target.value)} placeholder="" required />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="form-group">
                       <label>Contraseña</label>
-                      <input type="password" value={cookPassword} onChange={(e) => setCookPassword(e.target.value)} placeholder="••••••••" required />
+                      <input type="password" value={cookPassword} onChange={(e) => setCookPassword(e.target.value)} placeholder="" required />
                     </div>
                     <div className="form-group">
                       <label>Confirmar Contraseña</label>
-                      <input type="password" value={cookPasswordConfirm} onChange={(e) => setCookPasswordConfirm(e.target.value)} placeholder="••••••••" required />
+                      <input type="password" value={cookPasswordConfirm} onChange={(e) => setCookPasswordConfirm(e.target.value)} placeholder="" required />
                     </div>
                   </div>
 
@@ -316,20 +313,20 @@ export default function AdminPage() {
                 <form onSubmit={handleCreateVendor} className="space-y-4">
                   <div className="form-group">
                     <label>Nombre Completo</label>
-                    <input type="text" value={vendorName} onChange={(e) => setVendorName(e.target.value)} placeholder="Ej: Ana Torres" required />
+                    <input type="text" value={vendorName} onChange={(e) => setVendorName(e.target.value)} placeholder="" required />
                   </div>
                   <div className="form-group">
                     <label>Correo Electrónico</label>
-                    <input type="email" value={vendorEmail} onChange={(e) => setVendorEmail(e.target.value)} placeholder="ventas@empresa.com" required />
+                    <input type="email" value={vendorEmail} onChange={(e) => setVendorEmail(e.target.value)} placeholder="" required />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="form-group">
                       <label>Contraseña</label>
-                      <input type="password" value={vendorPassword} onChange={(e) => setVendorPassword(e.target.value)} placeholder="••••••••" required />
+                      <input type="password" value={vendorPassword} onChange={(e) => setVendorPassword(e.target.value)} placeholder="" required />
                     </div>
                     <div className="form-group">
                       <label>Confirmar Contraseña</label>
-                      <input type="password" value={vendorPasswordConfirm} onChange={(e) => setVendorPasswordConfirm(e.target.value)} placeholder="••••••••" required />
+                      <input type="password" value={vendorPasswordConfirm} onChange={(e) => setVendorPasswordConfirm(e.target.value)} placeholder="" required />
                     </div>
                   </div>
 

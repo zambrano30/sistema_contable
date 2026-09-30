@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient'
+import { getActiveCompanyId } from './companyService'
 
 /**
  * Create a new command in Supabase
@@ -23,10 +24,14 @@ export async function createCommand(commandData) {
       }
     }
 
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de crear comandas' }
+
     const { data, error } = await supabase
       .from('commands')
       .insert({
         ...commandData,
+        company_id: companyId,
         created_by: user.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -65,9 +70,13 @@ export async function getCommands() {
   }
 
   try {
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de ver comandas' }
+
     const { data, error } = await supabase
       .from('commands')
       .select('*')
+      .eq('company_id', companyId)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -103,9 +112,13 @@ export async function getCommandsByStatus(status) {
   }
 
   try {
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes de ver comandas' }
+
     const { data, error } = await supabase
       .from('commands')
       .select('*')
+      .eq('company_id', companyId)
       .eq('status', status)
       .order('created_at', { ascending: false })
 
