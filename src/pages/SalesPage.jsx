@@ -439,23 +439,11 @@ export default function SalesPage() {
         <div className="space-y-6 min-w-0">
           {/* Client Selection Card */}
           <div className="card">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-color)]">
+            <div className="mb-4 pb-3 border-b border-[var(--border-color)]">
               <h3 className="text-base font-extrabold m-0 text-[var(--text-primary)] flex items-center gap-2">
                 <span className="material-symbols-outlined text-[var(--secondary)]">person_search</span>
                 <span>Datos del Cliente</span>
               </h3>
-              <label className="flex items-center gap-2 cursor-pointer bg-white/5 px-3 py-1.5 rounded-xl border border-white/10 hover:border-[var(--accent-orange)] transition">
-                <input
-                  type="checkbox"
-                  checked={isConsumerFinal}
-                  onChange={(e) => {
-                    setIsConsumerFinal(e.target.checked)
-                    if (e.target.checked) setSelectedClient('')
-                  }}
-                  className="w-4 h-4 accent-[var(--accent-orange)] cursor-pointer"
-                />
-                <span className="text-xs font-bold text-[var(--accent-orange-light)]">Consumidor Final</span>
-              </label>
             </div>
 
             {!isConsumerFinal ? (
@@ -505,23 +493,11 @@ export default function SalesPage() {
 
           {/* Product Selection Card */}
           <div className="card">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-color)]">
+            <div className="mb-4 pb-3 border-b border-[var(--border-color)]">
               <h3 className="text-base font-extrabold m-0 text-[var(--text-primary)] flex items-center gap-2">
                 <span className="material-symbols-outlined text-[var(--accent-orange)]">inventory_2</span>
                 <span>Productos</span>
               </h3>
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-[var(--text-secondary)]">
-                <input
-                  type="checkbox"
-                  checked={useSimpleInvoice}
-                  onChange={(e) => {
-                    setUseSimpleInvoice(e.target.checked)
-                    if (e.target.checked) setInvoiceItems([])
-                  }}
-                  className="w-4 h-4 accent-[var(--accent-orange)]"
-                />
-                <span>Monto Global (Factura Simple)</span>
-              </label>
             </div>
 
             {!useSimpleInvoice ? (

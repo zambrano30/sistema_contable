@@ -207,7 +207,7 @@ export default function ProductsPage() {
                 </div>
 
                 <div className="form-group">
-                  <label>Código SKU / Barcode</label>
+                  <label>Código / Barcode</label>
                   <input 
                     type="text" 
                     name="sku" 
@@ -330,7 +330,7 @@ export default function ProductsPage() {
                 <div className="flex justify-between items-start mb-2 gap-2">
                   <h3 className="text-base font-extrabold m-0 text-white leading-tight">{product.name}</h3>
                   <span className="sku-cell whitespace-nowrap text-xs">
-                    {product.sku || 'SKU-000'}
+                    {product.sku || 'COD-000'}
                   </span>
                 </div>
                 {product.description && (
