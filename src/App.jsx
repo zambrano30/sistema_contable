@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { CompanyProvider, useCompany } from './contexts/CompanyContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { Layout } from './components/Layout'
+import { LoadingScreen } from './components/LoadingScreen'
 import { OfflineIndicator } from './hooks/useOffline.jsx'
 import { offlineDB } from './lib/offlineDB'
 import { syncManager } from './lib/syncManager'
@@ -30,7 +31,7 @@ function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
 
   if (loading) {
-    return <div className="loading">Cargando...</div>
+    return <LoadingScreen message="Inicializando sesión..." />
   }
 
   if (!user) {
@@ -45,11 +46,11 @@ function AppContent() {
   const { activeCompany, loading: companyLoading } = useCompany()
 
   if (loading) {
-    return <div className="loading">Inicializando aplicación...</div>
+    return <LoadingScreen message="Inicializando aplicación..." />
   }
 
   if (user && companyLoading) {
-    return <div className="loading">Cargando empresa...</div>
+    return <LoadingScreen message="Cargando empresa..." />
   }
 
   if (user && !activeCompany) {
