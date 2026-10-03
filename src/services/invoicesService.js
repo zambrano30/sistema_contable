@@ -444,3 +444,122 @@ export async function deleteInvoice(id) {
 
   return { ok: true }
 }
+
+/**
+ * Recalculate and fix invoice totals (especially for invoices with total_amount = 0)
+ * @returns {Promise<{ok: boolean, fixed: number, error?: string}>}
+ */
+export async function recalculateInvoiceTotals() {
+  if (!isSupabaseConfigured || !supabase) {
+    return {
+      ok: false,
+      error: 'Missing Supabase environment variables.',
+    }
+  }
+
+  try {
+    const companyId = getActiveCompanyId()
+    if (!companyId) return { ok: false, error: 'Selecciona una empresa antes' }
+
+    // Get all invoices with total_amount = 0
+    const { data: zeroInvoices, error: fetchError } = await supabase
+      .from('invoices')
+      .select('id, invoice_number, subtotal, discount_amount, total_amount')
+      .eq('company_id', companyId)
+      .eq('total_amount', 0)
+
+    if (fetchError) {
+      return { ok: false, error: fetchError.message }
+    }
+
+    if (!zeroInvoices || zeroInvoices.length === 0) {
+      return { ok: true, fixed: 0 }
+    }
+
+    let fixed = 0
+
+    // For each invoice with 0 total, calculate from items or use subtotal
+    for (const invoice of zeroInvoices) {
+      // Get invoice items to calculate total from line items
+      const { data: items } = await supabase
+        .from('invoice_items')
+        .select('line_total')
+        .eq('invoice_id', invoice.id)
+
+      let newTotal = 0
+
+      if (items && items.length > 0) {
+        // Calculate from line items
+        newTotal = items.reduce((sum, item) => sum + (Number(item.line_total) || 0), 0)
+      } else if (invoice.subtotal > 0) {
+        // Use subtotal if no items
+        newTotal = invoice.subtotal - (Number(invoice.discount_amount) || 0)
+      }
+
+      // Update if we calculated a valid total
+      if (newTotal > 0) {
+        const { error: updateError } = await supabase
+          .from('invoices')
+          .update({ total_amount: newTotal })
+          .eq('id', invoice.id)
+
+        if (!updateError) {
+          fixed++
+        }
+      }
+    }
+
+    return { ok: true, fixed }
+  } catch (error) {
+    return { ok: false, error: error.message }
+  }
+}
+
+/**
+ * Assign company_id to invoices that don't have one
+ * Useful when invoices were created before the company filtering system was implemented
+ * @param {string} companyId - The company ID to assign to invoices without company_id
+ * @returns {Promise<{ok: boolean, fixed: number, error?: string}>}
+ */
+export async function assignCompanyIdToInvoices(companyId) {
+  if (!isSupabaseConfigured || !supabase) {
+    return {
+      ok: false,
+      error: 'Missing Supabase environment variables.',
+    }
+  }
+
+  if (!companyId) {
+    return { ok: false, error: 'company_id es requerido' }
+  }
+
+  try {
+    // Get all invoices without company_id
+    const { data: orphanInvoices, error: fetchError } = await supabase
+      .from('invoices')
+      .select('id, invoice_number')
+      .is('company_id', null)
+
+    if (fetchError) {
+      return { ok: false, error: fetchError.message }
+    }
+
+    if (!orphanInvoices || orphanInvoices.length === 0) {
+      return { ok: true, fixed: 0 }
+    }
+
+    // Assign company_id to all orphan invoices
+    const { error: updateError } = await supabase
+      .from('invoices')
+      .update({ company_id: companyId })
+      .is('company_id', null)
+
+    if (updateError) {
+      return { ok: false, error: updateError.message }
+    }
+
+    return { ok: true, fixed: orphanInvoices.length }
+  } catch (error) {
+    return { ok: false, error: error.message }
+  }
+}

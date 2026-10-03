@@ -56,7 +56,6 @@ export function Sidebar({ collapsed, hidden, onToggle, onToggleHidden }) {
       }
       reader.readAsDataURL(file)
     } catch (error) {
-      console.error('Error:', error)
       setUploading(false)
     } finally {
       if (fileInputRef.current) {

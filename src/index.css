@@ -1,28 +1,28 @@
 @import "tailwindcss";
 
 :root, [data-theme="dark"] {
-  --background: #0b0e14;
-  --surface: #121721;
-  --surface-container-lowest: #080a0e;
-  --surface-container-low: #161c28;
-  --surface-container: #1b2232;
-  --surface-container-high: #242d40;
-  --surface-container-highest: #2e3950;
+  --background: #0d1621;
+  --surface: #132838;
+  --surface-container-lowest: #0a0f17;
+  --surface-container-low: #17202d;
+  --surface-container: #1d2a3a;
+  --surface-container-high: #263547;
+  --surface-container-highest: #2f4158;
   
-  --glass-bg: rgba(22, 28, 43, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-border-hover: rgba(255, 159, 10, 0.3);
+  --glass-bg: rgba(19, 40, 56, 0.75);
+  --glass-border: rgba(108, 189, 201, 0.12);
+  --glass-border-hover: rgba(92, 188, 201, 0.3);
   
-  --primary: #ff9f0a;
-  --primary-hover: #ffb340;
-  --primary-container: #ff7b00;
-  --on-primary: #1c0e00;
+  --primary: #5cbcc9;
+  --primary-hover: #7ecdd8;
+  --primary-container: #2f7a8a;
+  --on-primary: #f0f8fa;
   
-  --secondary: #007aff;
-  --secondary-container: #0056b3;
+  --secondary: #74b3d0;
+  --secondary-container: #4a8fa8;
   --on-secondary: #ffffff;
   
-  --tertiary: #64d2ff;
+  --tertiary: #a8d4e8;
   
   --success: #30d158;
   --success-bg: rgba(48, 209, 88, 0.15);
@@ -46,28 +46,28 @@
 }
 
 [data-theme="light"] {
-  --background: #f4f6f9;
+  --background: #f0f7f9;
   --surface: #ffffff;
   --surface-container-lowest: #ffffff;
-  --surface-container-low: #f8fafc;
-  --surface-container: #f1f5f9;
-  --surface-container-high: #e2e8f0;
-  --surface-container-highest: #cbd5e1;
+  --surface-container-low: #f5f9fb;
+  --surface-container: #edf4f7;
+  --surface-container-high: #d9e8f0;
+  --surface-container-highest: #c5dce8;
   
-  --glass-bg: rgba(255, 255, 255, 0.88);
-  --glass-border: rgba(0, 0, 0, 0.1);
-  --glass-border-hover: rgba(234, 88, 12, 0.35);
+  --glass-bg: rgba(255, 255, 255, 0.92);
+  --glass-border: rgba(92, 188, 201, 0.15);
+  --glass-border-hover: rgba(74, 143, 168, 0.35);
   
-  --primary: #ea580c;
-  --primary-hover: #f97316;
-  --primary-container: #c2410c;
+  --primary: #2f7a8a;
+  --primary-hover: #4a8fa8;
+  --primary-container: #1f5a78;
   --on-primary: #ffffff;
   
-  --secondary: #2563eb;
-  --secondary-container: #1d4ed8;
+  --secondary: #4a8fa8;
+  --secondary-container: #2f7a8a;
   --on-secondary: #ffffff;
   
-  --tertiary: #0284c7;
+  --tertiary: #1f5a78;
   
   --success: #16a34a;
   --success-bg: rgba(22, 163, 74, 0.12);

@@ -7,8 +7,6 @@ export const syncManager = {
   lastSyncTime: null,
 
   async init() {
-    console.log('Inicializando Sync Manager...')
-    
     // Escuchar eventos de conexión
     window.addEventListener('online', () => this.syncOfflineData())
     window.addEventListener('connectionRestored', () => this.syncOfflineData())
@@ -34,34 +32,29 @@ export const syncManager = {
     }
 
     this.isSyncing = true
-    console.log('📡 Iniciando sincronización...')
 
     try {
       const syncQueue = await offlineDB.getSyncQueue(false)
 
       if (syncQueue.length === 0) {
-        console.log('✅ Nada que sincronizar')
         this.isSyncing = false
         return
       }
-
-      console.log(`Sincronizando ${syncQueue.length} operaciones...`)
 
       for (const item of syncQueue) {
         try {
           await this.syncQueueItem(item)
         } catch (error) {
-          console.error(`Error sincronizando item ${item.id}:`, error)
+          // Error sincronizando item
         }
       }
 
       await offlineDB.setMetadata('lastSync', new Date().toISOString())
       this.lastSyncTime = new Date()
       
-      console.log('✅ Sincronización completada')
       window.dispatchEvent(new CustomEvent('syncCompleted'))
     } catch (error) {
-      console.error('Error en sincronización:', error)
+      // Error en sincronización
     } finally {
       this.isSyncing = false
     }
@@ -71,7 +64,6 @@ export const syncManager = {
     const { id, table, operation, data, recordId, attempts } = item
 
     if (attempts >= 3) {
-      console.warn(`Item ${id} excedió intentos de sincronización`)
       return
     }
 
@@ -93,13 +85,12 @@ export const syncManager = {
           await this.syncInventory(operation, data, recordId)
           break
         default:
-          console.warn(`Tabla desconocida: ${table}`)
+          // Tabla desconocida
       }
 
       await offlineDB.markAsSynced(id)
-      console.log(`✅ Sincronizado: ${table} - ${operation}`)
     } catch (error) {
-      console.error(`Error sincronizando ${table}:`, error)
+      // Error sincronizando
       
       // Incrementar intentos
       const tx = offlineDB.db.transaction('syncQueue', 'readwrite')
@@ -162,7 +153,6 @@ export const syncManager = {
 
   // Forzar sincronización manual
   async forceSyncNow() {
-    console.log('Forzando sincronización...')
     await this.syncOfflineData()
   },
 

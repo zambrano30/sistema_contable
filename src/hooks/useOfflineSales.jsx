@@ -23,7 +23,7 @@ export function useOfflineSales() {
       const localInvoices = await offlineDB.getInvoices()
       setInvoices(localInvoices || [])
     } catch (error) {
-      console.error('Error cargando facturas:', error)
+      // Error cargando facturas
     } finally {
       setLoading(false)
     }
@@ -48,7 +48,7 @@ export function useOfflineSales() {
 
       return invoiceId
     } catch (error) {
-      console.error('Error creando factura:', error)
+      // Error creando factura
       throw error
     }
   }
@@ -63,7 +63,7 @@ export function useOfflineSales() {
         await syncManager.syncOfflineData()
       }
     } catch (error) {
-      console.error('Error actualizando factura:', error)
+      // Error actualizando factura
       throw error
     }
   }
@@ -78,7 +78,7 @@ export function useOfflineSales() {
         await syncManager.syncOfflineData()
       }
     } catch (error) {
-      console.error('Error eliminando factura:', error)
+      // Error eliminando factura
       throw error
     }
   }

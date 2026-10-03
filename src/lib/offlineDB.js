@@ -12,19 +12,16 @@ export const offlineDB = {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
       request.onerror = () => {
-        console.error('Error al abrir IndexedDB:', request.error);
         reject(request.error);
       };
 
       request.onsuccess = () => {
         this.db = request.result;
-        console.log('✅ IndexedDB inicializado');
         resolve(this.db);
       };
 
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
-        console.log('Creando/Actualizando estructura de IndexedDB...');
 
         // Tabla de Facturas/Ventas
         if (!db.objectStoreNames.contains('invoices')) {

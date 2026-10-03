@@ -1,18 +1,38 @@
 import { useEffect, useState } from 'react'
 import { getAllExpenses, createExpense, updateExpense, deleteExpense } from '../services/expensesService'
 import { getAllProviders, createProvider } from '../services/providersService'
+import { getRecurringExpenses, createRecurringExpense, updateRecurringExpense, deactivateRecurringExpense, processDueRecurringExpenses } from '../services/recurringExpensesService'
+import { getExpenseBudgets, createExpenseBudget, updateExpenseBudget, deleteExpenseBudget, getBudgetAlerts } from '../services/expenseBudgetsService'
+import { getExpenseAuditLog, getRecentAuditActivity, logExpenseAudit } from '../services/expenseAuditService'
+import { getExpenseAttachments, uploadExpenseAttachment, deleteExpenseAttachment } from '../services/expenseAttachmentsService'
 import { getLocalDateKey } from '../lib/dateUtils'
+import ExpenseChart from '../components/ExpenseChart'
+import BudgetCard from '../components/BudgetCard'
+import RecurringExpenseCard from '../components/RecurringExpenseCard'
+import AuditLog from '../components/AuditLog'
+import ExpenseAttachments from '../components/ExpenseAttachments'
 
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState([])
+  const [recurringExpenses, setRecurringExpenses] = useState([])
+  const [budgets, setBudgets] = useState([])
+  const [budgetAlerts, setBudgetAlerts] = useState([])
+  const [auditLogs, setAuditLogs] = useState([])
+  const [attachments, setAttachments] = useState({})
+
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [activeTab, setActiveTab] = useState('dashboard')
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [providers, setProviders] = useState([])
-  const [showNewProvider, setShowNewProvider] = useState(false)
-  const [newProviderName, setNewProviderName] = useState('')
-  const [creatingProvider, setCreatingProvider] = useState(false)
+
+  const [filterCategory, setFilterCategory] = useState('all')
+  const [filterDateRange, setFilterDateRange] = useState('month')
+  const [filterStartDate, setFilterStartDate] = useState(null)
+  const [filterEndDate, setFilterEndDate] = useState(null)
+
+  const [categoryTotals, setCategoryTotals] = useState({})
   const [useNewExpenseProduct, setUseNewExpenseProduct] = useState(false)
   const [pendingExpenses, setPendingExpenses] = useState([])
   const [savingPending, setSavingPending] = useState(false)
@@ -29,75 +49,68 @@ export default function ExpensesPage() {
     notes: '',
   })
 
-  const [categoryTotals, setCategoryTotals] = useState({
-    pasteles: 0,
-    jugos: 0,
-    sueldos: 0,
-    servicios: 0,
-    otros: 0,
+  const [recurringFormData, setRecurringFormData] = useState({
+    provider_id: 'varios',
+    category: 'sueldos',
+    item_name: '',
+    description: '',
+    amount: '',
+    frequency: 'monthly',
+    day_of_month: new Date().getDate(),
   })
 
-  const [filterCategory, setFilterCategory] = useState('all')
+  const [budgetFormData, setBudgetFormData] = useState({
+    category: 'pasteles',
+    period: 'monthly',
+    budget_amount: '',
+    alert_threshold: 80,
+  })
 
   const CATEGORIES = [
-    { id: 'pasteles', name: '🍰 Insumos / Materia Prima', icon: 'bakery_dining', color: 'text-amber-400' },
-    { id: 'jugos', name: '🥤 Bebidas & Envases', icon: 'local_drink', color: 'text-blue-400' },
-    { id: 'sueldos', name: '👨‍💼 Sueldos & Personal', icon: 'badge', color: 'text-emerald-400' },
+    { id: 'pasteles', name: '🍰 Insumos', icon: 'bakery_dining', color: 'text-amber-400' },
+    { id: 'sueldos', name: '👨‍💼 Sueldos', icon: 'badge', color: 'text-emerald-400' },
     { id: 'servicios', name: '🔧 Servicios Básicos', icon: 'bolt', color: 'text-purple-400' },
     { id: 'otros', name: '📦 Gastos Varios', icon: 'widgets', color: 'text-slate-400' },
   ]
 
   useEffect(() => {
-    loadData()
+    loadAllData()
   }, [])
 
-  const loadData = async () => {
+  const loadAllData = async () => {
     setLoading(true)
-    const [expensesResult, providersResult] = await Promise.all([
-      getAllExpenses(),
-      getAllProviders(),
-    ])
+    try {
+      const [expensesResult, providersResult, recurringResult, budgetsResult, alertsResult, auditResult] = await Promise.all([
+        getAllExpenses(),
+        getAllProviders(),
+        getRecurringExpenses(),
+        getExpenseBudgets(),
+        getBudgetAlerts(),
+        getRecentAuditActivity(7),
+      ])
 
-    if (expensesResult.ok) {
-      setExpenses(expensesResult.data || [])
-      calculateCategoryTotals(expensesResult.data || [])
-    } else setError(expensesResult.error)
+      if (expensesResult.ok) {
+        setExpenses(expensesResult.data || [])
+        calculateCategoryTotals(expensesResult.data || [])
+      } else setError(expensesResult.error)
 
-    if (providersResult.ok) setProviders(providersResult.data || [])
-    else setError(providersResult.error)
-
+      if (providersResult.ok) setProviders(providersResult.data || [])
+      if (recurringResult.ok) setRecurringExpenses(recurringResult.data || [])
+      if (budgetsResult.ok) setBudgets(budgetsResult.data || [])
+      if (alertsResult.ok) setBudgetAlerts(alertsResult.data || [])
+      if (auditResult.ok) setAuditLogs(auditResult.data || [])
+    } catch (err) {
+      setError(err.message)
+    }
     setLoading(false)
   }
 
-  const handleCreateProvider = async (e) => {
-    e.preventDefault()
-    const name = newProviderName.trim()
-    if (!name) return
-
-    setCreatingProvider(true)
-    const result = await createProvider(name)
-    if (result.ok) {
-      setProviders((currentProviders) => [...currentProviders, result.data].sort((a, b) => a.name.localeCompare(b.name)))
-      setFormData((currentData) => ({ ...currentData, provider_id: result.data.id.toString() }))
-      setNewProviderName('')
-      setShowNewProvider(false)
-    } else {
-      setError(result.error)
-    }
-    setCreatingProvider(false)
-  }
-
   const calculateCategoryTotals = (expenseList) => {
-    const totals = {
-      pasteles: 0,
-      jugos: 0,
-      sueldos: 0,
-      servicios: 0,
-      otros: 0,
-    }
+    const totals = {}
+    CATEGORIES.forEach(cat => totals[cat.id] = 0)
 
     expenseList.forEach((exp) => {
-      if (Object.prototype.hasOwnProperty.call(totals, exp.category)) {
+      if (totals.hasOwnProperty(exp.category)) {
         totals[exp.category] += exp.amount || 0
       }
     })
@@ -105,43 +118,73 @@ export default function ExpensesPage() {
     setCategoryTotals(totals)
   }
 
-  const calculateAmount = (quantity = 1, unitPrice = 0) => {
-    return (parseFloat(quantity) || 0) * (parseFloat(unitPrice) || 0)
-  }
+  const getFilteredExpenses = () => {
+    let filtered = expenses
 
-  const handleFormChange = (e) => {
-    const { name, value } = e.target
-    const updatedData = { ...formData, [name]: value }
-
-    if (name === 'quantity' || name === 'unit_price') {
-      updatedData.amount = updatedData.quantity !== '' && updatedData.unit_price !== ''
-        ? calculateAmount(updatedData.quantity, updatedData.unit_price)
-        : ''
+    if (filterCategory !== 'all') {
+      filtered = filtered.filter(e => e.category === filterCategory)
     }
 
-    if (name === 'amount') {
-      updatedData.amount = value === '' ? '' : parseFloat(value) || 0
+    if (filterStartDate && filterEndDate) {
+      filtered = filtered.filter(e => {
+        const expDate = new Date(e.expense_date)
+        return expDate >= new Date(filterStartDate) && expDate <= new Date(filterEndDate)
+      })
     }
 
-    setFormData(updatedData)
+    return filtered
   }
 
-  const expenseProducts = [...new Set(
-    expenses
-      .map((expense) => expense.item_name?.trim())
-      .filter(Boolean)
-  )].sort((firstProduct, secondProduct) => firstProduct.localeCompare(secondProduct))
+  const handleProcessRecurring = async (recurring) => {
+    const result = await processDueRecurringExpenses()
+    if (result.ok) {
+      await loadAllData()
+      setError('')
+    } else {
+      setError(result.error)
+    }
+  }
 
-  const handleExpenseProductChange = (e) => {
-    const value = e.target.value
-    if (value === '__new__') {
-      setUseNewExpenseProduct(true)
-      setFormData((currentData) => ({ ...currentData, item_name: '' }))
+  const handleCreateBudget = async (e) => {
+    e.preventDefault()
+    const amount = parseFloat(budgetFormData.budget_amount)
+    if (!amount || amount <= 0) {
+      setError('Ingresa un monto válido')
       return
     }
 
-    setUseNewExpenseProduct(false)
-    setFormData((currentData) => ({ ...currentData, item_name: value }))
+    const today = new Date()
+    let startDate = new Date(today)
+    let endDate = new Date(today)
+
+    if (budgetFormData.period === 'monthly') {
+      startDate.setDate(1)
+      endDate.setMonth(endDate.getMonth() + 1)
+      endDate.setDate(0)
+    } else if (budgetFormData.period === 'quarterly') {
+      const quarter = Math.floor(today.getMonth() / 3)
+      startDate.setMonth(quarter * 3, 1)
+      endDate.setMonth((quarter + 1) * 3)
+      endDate.setDate(0)
+    } else if (budgetFormData.period === 'yearly') {
+      startDate.setMonth(0, 1)
+      endDate.setMonth(11, 31)
+    }
+
+    const result = await createExpenseBudget({
+      ...budgetFormData,
+      budget_amount: amount,
+      start_date: startDate.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0],
+    })
+
+    if (result.ok) {
+      await loadAllData()
+      setBudgetFormData({ category: 'pasteles', period: 'monthly', budget_amount: '', alert_threshold: 80 })
+      setError('')
+    } else {
+      setError(result.error)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -153,7 +196,7 @@ export default function ExpensesPage() {
     const amount = parseFloat(formData.amount)
 
     if (!formData.item_name || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitPrice) || unitPrice < 0 || !Number.isFinite(amount) || amount <= 0) {
-      setError('Producto, cantidad, precio unitario y monto válidos requeridos')
+      setError('Completa todos los campos requeridos correctamente')
       return
     }
 
@@ -172,69 +215,57 @@ export default function ExpensesPage() {
     if (editingId) {
       const result = await updateExpense(editingId, expenseData)
       if (result.ok) {
-        await loadData()
+        await logExpenseAudit(editingId, 'update', null, expenseData)
+        await loadAllData()
         resetForm()
       } else {
         setError(result.error)
       }
     } else {
-      setPendingExpenses((currentExpenses) => [...currentExpenses, { ...expenseData, pendingId: crypto.randomUUID() }])
-      setFormData((currentData) => ({
-        ...currentData,
-        item_name: '',
-        quantity: '',
-        unit_price: '',
-        amount: '',
-        description: '',
-        notes: '',
-      }))
-      setUseNewExpenseProduct(false)
+      // Crear nuevo gasto directamente en Supabase
+      const result = await createExpense(expenseData)
+      if (result.ok) {
+        await logExpenseAudit(result.data.id, 'create', null, expenseData)
+        await loadAllData()
+        resetForm()
+      } else {
+        setError(result.error || 'Error al guardar el gasto')
+      }
     }
-  }
-
-  const removePendingExpense = (pendingId) => {
-    setPendingExpenses((currentExpenses) => currentExpenses.filter((expense) => expense.pendingId !== pendingId))
   }
 
   const savePendingExpenses = async () => {
     if (pendingExpenses.length === 0) return
-
     setSavingPending(true)
-    const results = await Promise.all(pendingExpenses.map(({ pendingId, ...expense }) => createExpense(expense)))
-    const failedResult = results.find((result) => !result.ok)
 
+    const results = await Promise.all(
+      pendingExpenses.map(({ pendingId, ...expense }) => 
+        createExpense(expense).then(async (result) => {
+          if (result.ok) {
+            await logExpenseAudit(result.data.id, 'create', null, expense)
+          }
+          return result
+        })
+      )
+    )
+
+    const failedResult = results.find((result) => !result.ok)
     if (failedResult) {
       setError(failedResult.error)
     } else {
-      await loadData()
+      await loadAllData()
       setPendingExpenses([])
       resetForm()
     }
     setSavingPending(false)
   }
 
-  const handleEdit = (expense) => {
-    setUseNewExpenseProduct(false)
-    setFormData({
-      provider_id: expense.provider_id?.toString() || 'varios',
-      category: expense.category,
-      item_name: expense.item_name,
-      description: expense.description || '',
-      quantity: expense.quantity ?? '',
-      unit_price: expense.unit_price ?? '',
-      amount: expense.amount ?? '',
-      expense_date: expense.expense_date,
-      notes: expense.notes || '',
-    })
-    setEditingId(expense.id)
-    setShowForm(true)
-  }
-
   const handleDelete = async (id) => {
-    if (window.confirm('¿Deseas eliminar este registro de gasto?')) {
+    if (window.confirm('¿Eliminar este gasto?')) {
       const result = await deleteExpense(id)
       if (result.ok) {
-        await loadData()
+        await logExpenseAudit(id, 'delete')
+        await loadAllData()
       } else {
         setError(result.error)
       }
@@ -255,23 +286,28 @@ export default function ExpensesPage() {
     })
     setShowForm(false)
     setEditingId(null)
-    setShowNewProvider(false)
-    setNewProviderName('')
     setUseNewExpenseProduct(false)
     setPendingExpenses([])
   }
 
-  const filteredExpenses = filterCategory === 'all' 
-    ? expenses 
-    : expenses.filter(e => e.category === filterCategory)
+  const expenseProducts = [...new Set(
+    expenses.map((e) => e.item_name?.trim()).filter(Boolean)
+  )].sort()
 
+  const filteredExpenses = getFilteredExpenses()
   const totalExpenses = Object.values(categoryTotals).reduce((sum, val) => sum + val, 0)
+  const last7Days = expenses.filter(e => {
+    const date = new Date(e.expense_date)
+    const today = new Date()
+    const diff = (today - date) / (1000 * 60 * 60 * 24)
+    return diff <= 7
+  })
 
   if (loading) return (
     <div className="page-container flex items-center justify-center py-20">
       <div className="text-center">
         <span className="material-symbols-outlined text-4xl text-[var(--accent-orange)] animate-spin">sync</span>
-        <p className="mt-2 text-[var(--text-secondary)] font-medium">Cargando registros de egresos...</p>
+        <p className="mt-2 text-[var(--text-secondary)]">Cargando datos de gastos...</p>
       </div>
     </div>
   )
@@ -280,27 +316,17 @@ export default function ExpensesPage() {
     <div className="page-container">
       {/* Header */}
       <header className="page-header">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
-            <span className="material-symbols-outlined text-red-400 text-3xl">trending_down</span>
-            <span>Gestión de Gastos y Egresos</span>
-          </h1>
-
-        </div>
-
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="btn-primary"
-        >
+        <h1 className="text-2xl font-extrabold flex items-center gap-2">
+          <span className="material-symbols-outlined text-red-400 text-3xl">trending_down</span>
+          Gestión de Gastos Avanzada
+        </h1>
+        <button onClick={() => { setActiveTab('gastos'); setShowForm(true) }} className="btn-primary">
           <span className="material-symbols-outlined">add</span>
-          <span>{editingId ? 'Actualizar Gasto' : 'Registrar Nuevo Gasto'}</span>
-        </button>
-        <button type="button" onClick={() => window.print()} className="btn-secondary print-hide">
-          <span className="material-symbols-outlined">print</span>
-          <span>Imprimir</span>
+          Registrar Gasto
         </button>
       </header>
 
+      {/* Alerts & Errors */}
       {error && (
         <div className="error-message flex items-center gap-2">
           <span className="material-symbols-outlined">warning</span>
@@ -308,315 +334,339 @@ export default function ExpensesPage() {
         </div>
       )}
 
-      {/* Category Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {CATEGORIES.map((cat) => (
-          <div
-            key={cat.id}
-            onClick={() => setFilterCategory(filterCategory === cat.id ? 'all' : cat.id)}
-            className={`bento-card cursor-pointer transition-all ${
-              filterCategory === cat.id ? 'border-[var(--accent-orange)] bg-[var(--accent-orange)]/10' : ''
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-tertiary)]">{cat.name}</span>
-              <span className={`material-symbols-outlined text-xl ${cat.color}`}>{cat.icon}</span>
+      {budgetAlerts.length > 0 && (
+        <div className="card border-l-4 border-red-500 bg-red-950/20">
+          <div className="flex items-start gap-3">
+            <span className="material-symbols-outlined text-2xl text-red-400">warning</span>
+            <div>
+              <h3 className="font-bold text-white mb-2">⚠️ Alertas de Presupuesto</h3>
+              <ul className="space-y-1 text-sm">
+                {budgetAlerts.map((alert, idx) => (
+                  <li key={idx} className="text-red-300">
+                    {alert.budget.category}: ${alert.totalSpent.toFixed(2)} / ${alert.budgetAmount.toFixed(2)} ({alert.percentageUsed.toFixed(1)}%)
+                  </li>
+                ))}
+              </ul>
             </div>
-            <p className="text-xl font-extrabold font-mono text-white mt-2 mb-0">
-              ${categoryTotals[cat.id]?.toFixed(2) || '0.00'}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      {/* Total Hero Card */}
-      <div className="bento-card border-red-500/40 bg-gradient-to-r from-red-950/40 to-red-900/20">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-xs font-extrabold uppercase tracking-widest text-red-300">TOTAL EGRESOS DEL PERIODO</span>
-            <h2 className="text-3xl font-extrabold font-mono text-red-400 mt-1 m-0">
-              ${totalExpenses.toFixed(2)}
-            </h2>
-          </div>
-          <div className="p-3 rounded-2xl bg-red-500/10 text-red-400 border border-red-500/20">
-            <span className="material-symbols-outlined text-4xl">payments</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Form Modal */}
-      {showForm && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) resetForm(); }}>
-          <div className="modal-content">
-            <div className="flex justify-between items-center mb-5 pb-3 border-b border-[var(--border-color)]">
-              <h2 className="text-xl font-extrabold text-white m-0 flex items-center gap-2">
-                <span className="material-symbols-outlined text-red-400">add_card</span>
-                <span>{editingId ? 'Editar Registro de Gasto' : 'Registrar Nuevo Gasto'}</span>
-              </h2>
-              <button 
-                className="text-[var(--text-tertiary)] hover:text-white bg-none border-none cursor-pointer"
-                onClick={resetForm}
-              >
-                <span className="material-symbols-outlined text-2xl">close</span>
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="form-group">
-                <label htmlFor="expense-provider">Proveedor</label>
-                <div className="flex gap-2">
-                  <select
-                    id="expense-provider"
-                    name="provider_id"
-                    value={formData.provider_id}
-                    onChange={handleFormChange}
-                    className="flex-1"
-                  >
-                    <option value="varios">Varios / Sin proveedor</option>
-                    {providers.map((provider) => (
-                      <option key={provider.id} value={provider.id}>
-                        {provider.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => setShowNewProvider(!showNewProvider)}
-                    className="btn-secondary whitespace-nowrap"
-                  >
-                    <span className="material-symbols-outlined">person_add</span>
-                    <span>Nuevo</span>
-                  </button>
-                </div>
-              </div>
-
-              {showNewProvider && (
-                <div className="p-3 rounded-xl border border-[var(--accent-orange)]/30 bg-[var(--accent-orange)]/10">
-                  <div className="flex gap-2 items-end">
-                    <div className="form-group flex-1">
-                      <label htmlFor="new-provider-name">Nombre del proveedor</label>
-                      <input
-                        id="new-provider-name"
-                        type="text"
-                        value={newProviderName}
-                        onChange={(e) => setNewProviderName(e.target.value)}
-                        placeholder=""
-                        autoFocus
-                      />
-                    </div>
-                    <button type="button" onClick={handleCreateProvider} disabled={creatingProvider || !newProviderName.trim()} className="btn-primary">
-                      {creatingProvider ? 'Guardando...' : 'Guardar'}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="form-group">
-                <label>Categoría del Gasto</label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleFormChange}
-                >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="expense-product">Producto / Detalle del Gasto *</label>
-                <select
-                  id="expense-product"
-                  value={useNewExpenseProduct ? '__new__' : formData.item_name}
-                  onChange={handleExpenseProductChange}
-                  required
-                >
-                  <option value="">Selecciona un producto</option>
-                  {expenseProducts.map((product) => (
-                    <option key={product} value={product}>{product}</option>
-                  ))}
-                  <option value="__new__">+ Crear nuevo producto</option>
-                </select>
-                {useNewExpenseProduct && (
-                  <input
-                    type="text"
-                    name="item_name"
-                    value={formData.item_name}
-                    onChange={handleFormChange}
-                    placeholder=""
-                    autoFocus
-                    required
-                  />
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="form-group">
-                  <label>Cantidad</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    name="quantity"
-                    value={formData.quantity}
-                    onChange={handleFormChange}
-                    className="font-mono"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Precio Unit. ($)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    name="unit_price"
-                    value={formData.unit_price}
-                    onChange={handleFormChange}
-                    className="font-mono"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Monto Total ($)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    name="amount"
-                    value={formData.amount}
-                    onChange={handleFormChange}
-                    className="font-mono font-bold text-red-400"
-                    required
-                  />
-                </div>
-              </div>
-
-              {!editingId && pendingExpenses.length > 0 && (
-                <div className="space-y-2 rounded-xl border border-[var(--border-color)] p-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-white m-0">Gastos de esta sesión ({pendingExpenses.length})</h3>
-                    <span className="text-xs text-[var(--text-secondary)]">
-                      ${pendingExpenses.reduce((sum, expense) => sum + expense.amount, 0).toFixed(2)}
-                    </span>
-                  </div>
-                  {pendingExpenses.map((expense) => (
-                    <div key={expense.pendingId} className="flex items-center justify-between gap-3 rounded-lg bg-white/5 px-3 py-2">
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-white truncate m-0">{expense.item_name}</p>
-                        <p className="text-xs text-[var(--text-secondary)] m-0">
-                          {expense.quantity} x ${expense.unit_price.toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-sm font-mono text-red-300">${expense.amount.toFixed(2)}</span>
-                        <button type="button" onClick={() => removePendingExpense(expense.pendingId)} className="text-red-400 hover:text-red-300" title="Quitar gasto">
-                          <span className="material-symbols-outlined text-lg">delete</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="form-group">
-                <label>Fecha de Registro</label>
-                <input
-                  type="date"
-                  name="expense_date"
-                  value={formData.expense_date}
-                  onChange={handleFormChange}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Observaciones / Factura Proveedor</label>
-                <textarea
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleFormChange}
-                  rows="2"
-                  placeholder=""
-                />
-              </div>
-
-              <div className="flex gap-3 justify-end pt-4 border-t border-[var(--border-color)]">
-                <button type="button" onClick={resetForm} className="btn-secondary">
-                  Cancelar
-                </button>
-                <button type="submit" className="btn-primary">
-                  <span className="material-symbols-outlined">{editingId ? 'save' : 'playlist_add'}</span>
-                  <span>{editingId ? 'Actualizar Gasto' : 'Agregar Gasto'}</span>
-                </button>
-                {!editingId && pendingExpenses.length > 0 && (
-                  <button type="button" onClick={savePendingExpenses} disabled={savingPending} className="btn-primary">
-                    <span className="material-symbols-outlined">save</span>
-                    <span>{savingPending ? 'Guardando...' : `Guardar Todos (${pendingExpenses.length})`}</span>
-                  </button>
-                )}
-              </div>
-            </form>
           </div>
         </div>
       )}
 
-      {/* Expenses Table */}
-      <div className="card">
-        <h3 className="text-lg font-extrabold text-white m-0 mb-4 pb-2 border-b border-[var(--border-color)] flex items-center gap-2">
-          <span className="material-symbols-outlined text-[var(--accent-orange)]">list_alt</span>
-          <span>Historial de Gastos</span>
-        </h3>
+      {/* Tabs */}
+      <div className="flex gap-2 mb-4 overflow-x-auto">
+        {[
+          { id: 'dashboard', label: '📊 Dashboard', icon: 'dashboard' },
+          { id: 'gastos', label: '📝 Gastos', icon: 'receipt' },
+          { id: 'recurrentes', label: '🔄 Recurrentes', icon: 'repeat' },
+          { id: 'presupuestos', label: '💰 Presupuestos', icon: 'savings' },
+          { id: 'auditoria', label: '📋 Auditoría', icon: 'history' },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 rounded-lg font-semibold transition-all whitespace-nowrap ${
+              activeTab === tab.id
+                ? 'bg-[var(--accent-orange)] text-black'
+                : 'bg-white/10 text-[var(--text-secondary)] hover:bg-white/20'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        {filteredExpenses.length === 0 ? (
-          <p className="text-center text-[var(--text-tertiary)] py-8">Sin gastos registrados en el sistema</p>
-        ) : (
-          <div className="table-wrapper">
-            <table className="custom-table">
-              <thead>
-                <tr>
-                  <th>Categoría</th>
-                  <th>Detalle</th>
-                  <th>Fecha</th>
-                  <th className="text-right">Monto Total</th>
-                  <th className="text-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredExpenses.map((exp) => {
-                  const category = CATEGORIES.find(c => c.id === exp.category)
-                  return (
-                    <tr key={exp.id}>
-                      <td>
-                        <span className="badge badge-info font-bold text-xs">
-                          {category?.name || exp.category}
-                        </span>
-                      </td>
-                      <td>
-                        <p className="font-bold text-white m-0">{exp.item_name}</p>
-                        {exp.notes && <p className="text-xs text-[var(--text-tertiary)] m-0">{exp.notes}</p>}
-                      </td>
-                      <td className="text-xs text-[var(--text-secondary)]">
-                        {new Date(`${getLocalDateKey(exp.expense_date)}T00:00:00`).toLocaleDateString()}
-                      </td>
-                      <td className="text-right font-mono font-bold text-red-400">
-                        ${exp.amount.toFixed(2)}
-                      </td>
-                      <td className="text-center">
-                        <div className="flex justify-center gap-2">
-                          <button onClick={() => handleEdit(exp)} className="btn-secondary btn-small">
-                            <span className="material-symbols-outlined text-sm">edit</span>
-                          </button>
+      {/* DASHBOARD TAB */}
+      {activeTab === 'dashboard' && (
+        <div className="space-y-4">
+          {/* Category Summary */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {CATEGORIES.map((cat) => (
+              <div
+                key={cat.id}
+                onClick={() => { setActiveTab('gastos'); setFilterCategory(cat.id) }}
+                className="bento-card cursor-pointer hover:border-[var(--accent-orange)] transition-all"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-tertiary)]">{cat.name}</span>
+                  <span className={`material-symbols-outlined text-xl ${cat.color}`}>{cat.icon}</span>
+                </div>
+                <p className="text-2xl font-extrabold font-mono text-white">
+                  ${categoryTotals[cat.id]?.toFixed(2) || '0.00'}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Total Card */}
+          <div className="bento-card border-red-500/40 bg-gradient-to-r from-red-950/40 to-red-900/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-extrabold uppercase tracking-widest text-red-300">TOTAL EGRESOS</span>
+                <h2 className="text-4xl font-extrabold font-mono text-red-400 mt-1">${totalExpenses.toFixed(2)}</h2>
+              </div>
+              <span className="material-symbols-outlined text-5xl text-red-500/30">trending_down</span>
+            </div>
+          </div>
+
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="card">
+              <h3 className="font-bold text-white mb-4">Gastos por Categoría</h3>
+              <ExpenseChart expenses={filteredExpenses} type="category" />
+            </div>
+            <div className="card">
+              <h3 className="font-bold text-white mb-4">Tendencia (Últimos 7 días)</h3>
+              <ExpenseChart expenses={last7Days} type="trend" />
+            </div>
+          </div>
+
+          {/* Budget Status */}
+          {budgets.length > 0 && (
+            <div className="card">
+              <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[var(--accent-orange)]">savings</span>
+                Estado de Presupuestos
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {budgets.map((budget) => (
+                  <div key={budget.id} className="p-3 bg-white/5 rounded-lg">
+                    <p className="font-semibold text-white capitalize mb-2">{budget.category}</p>
+                    <div className="text-sm text-[var(--text-secondary)]">
+                      Período: {budget.period} | Presupuesto: ${budget.budget_amount.toFixed(2)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recurring Expenses Summary */}
+          {recurringExpenses.length > 0 && (
+            <div className="card">
+              <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                <span className="material-symbols-outlined text-cyan-400">repeat</span>
+                Próximos Gastos Recurrentes
+              </h3>
+              <div className="space-y-2">
+                {recurringExpenses.slice(0, 5).map((recurring) => (
+                  <div key={recurring.id} className="flex justify-between items-center p-2 bg-white/5 rounded">
+                    <div>
+                      <p className="font-semibold text-white text-sm">{recurring.item_name}</p>
+                      <p className="text-xs text-[var(--text-tertiary)]">{new Date(recurring.next_due_date).toLocaleDateString('es-ES')}</p>
+                    </div>
+                    <span className="font-mono font-bold text-amber-400">${recurring.amount.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* GASTOS TAB */}
+      {activeTab === 'gastos' && (
+        <div className="space-y-4">
+          {/* Filters */}
+          <div className="card">
+            <h3 className="font-bold text-white mb-3">Filtros</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="text-sm text-[var(--text-secondary)] block mb-1">Categoría</label>
+                <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="w-full">
+                  <option value="all">Todas</option>
+                  {CATEGORIES.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm text-[var(--text-secondary)] block mb-1">Desde</label>
+                <input type="date" value={filterStartDate || ''} onChange={(e) => setFilterStartDate(e.target.value)} className="w-full" />
+              </div>
+              <div>
+                <label className="text-sm text-[var(--text-secondary)] block mb-1">Hasta</label>
+                <input type="date" value={filterEndDate || ''} onChange={(e) => setFilterEndDate(e.target.value)} className="w-full" />
+              </div>
+            </div>
+          </div>
+
+          {/* Form Modal */}
+          {showForm && (
+            <div className="modal-overlay" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) resetForm(); }}>
+              <div className="modal-content max-h-screen overflow-y-auto">
+                <div className="flex justify-between items-center mb-4 pb-3 border-b border-[var(--border-color)]">
+                  <h2 className="text-xl font-bold text-white">Registrar Gasto</h2>
+                  <button onClick={resetForm} className="text-[var(--text-tertiary)] hover:text-white">
+                    <span className="material-symbols-outlined">close</span>
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-3">
+                  <div className="form-group">
+                    <label>Categoría</label>
+                    <select name="category" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}>
+                      {CATEGORIES.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Producto/Detalle</label>
+                    <input type="text" value={formData.item_name} onChange={(e) => setFormData({...formData, item_name: e.target.value})} required />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="form-group">
+                      <label>Cantidad</label>
+                      <input type="number" step="0.01" value={formData.quantity} onChange={(e) => setFormData({...formData, quantity: e.target.value, amount: (parseFloat(e.target.value) || 0) * (parseFloat(formData.unit_price) || 0)})} />
+                    </div>
+                    <div className="form-group">
+                      <label>Precio Unit.</label>
+                      <input type="number" step="0.01" value={formData.unit_price} onChange={(e) => setFormData({...formData, unit_price: e.target.value, amount: (parseFloat(formData.quantity) || 0) * (parseFloat(e.target.value) || 0)})} />
+                    </div>
+                    <div className="form-group">
+                      <label>Total</label>
+                      <input type="number" step="0.01" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} className="font-bold text-red-400" required />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Fecha</label>
+                    <input type="date" value={formData.expense_date} onChange={(e) => setFormData({...formData, expense_date: e.target.value})} />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Notas</label>
+                    <textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} rows="2" />
+                  </div>
+
+                  <div className="flex gap-2 justify-end pt-3 border-t border-[var(--border-color)]">
+                    <button type="button" onClick={resetForm} className="btn-secondary">Cancelar</button>
+                    <button type="submit" className="btn-primary">Guardar</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Expenses Table */}
+          {filteredExpenses.length === 0 ? (
+            <div className="card text-center py-8">
+              <p className="text-[var(--text-tertiary)]">Sin gastos registrados</p>
+            </div>
+          ) : (
+            <div className="card overflow-x-auto">
+              <table className="custom-table">
+                <thead>
+                  <tr>
+                    <th>Categoría</th>
+                    <th>Detalle</th>
+                    <th>Fecha</th>
+                    <th className="text-right">Monto</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredExpenses.map((exp) => {
+                    const category = CATEGORIES.find(c => c.id === exp.category)
+                    return (
+                      <tr key={exp.id}>
+                        <td><span className="badge badge-info text-xs">{category?.name || exp.category}</span></td>
+                        <td>{exp.item_name}</td>
+                        <td className="text-sm text-[var(--text-secondary)]">{new Date(exp.expense_date).toLocaleDateString()}</td>
+                        <td className="text-right font-mono font-bold text-red-400">${exp.amount.toFixed(2)}</td>
+                        <td className="text-center">
                           <button onClick={() => handleDelete(exp.id)} className="btn-danger btn-small">
                             <span className="material-symbols-outlined text-sm">delete</span>
                           </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* RECURRENTES TAB */}
+      {activeTab === 'recurrentes' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
+            {recurringExpenses.map((recurring) => (
+              <RecurringExpenseCard
+                key={recurring.id}
+                recurring={recurring}
+                onEdit={() => {}}
+                onDelete={() => deactivateRecurringExpense(recurring.id).then(() => loadAllData())}
+                onProcess={() => handleProcessRecurring(recurring)}
+              />
+            ))}
           </div>
-        )}
-      </div>
+          {recurringExpenses.length === 0 && (
+            <div className="card text-center py-8">
+              <p className="text-[var(--text-tertiary)]">Sin gastos recurrentes configurados</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* PRESUPUESTOS TAB */}
+      {activeTab === 'presupuestos' && (
+        <div className="space-y-4">
+          <div className="card">
+            <h3 className="font-bold text-white mb-4">Crear Nuevo Presupuesto</h3>
+            <form onSubmit={handleCreateBudget} className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div className="form-group">
+                  <label>Categoría</label>
+                  <select value={budgetFormData.category} onChange={(e) => setBudgetFormData({...budgetFormData, category: e.target.value})}>
+                    {CATEGORIES.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Período</label>
+                  <select value={budgetFormData.period} onChange={(e) => setBudgetFormData({...budgetFormData, period: e.target.value})}>
+                    <option value="monthly">Mensual</option>
+                    <option value="quarterly">Trimestral</option>
+                    <option value="yearly">Anual</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Monto ($)</label>
+                  <input type="number" step="0.01" value={budgetFormData.budget_amount} onChange={(e) => setBudgetFormData({...budgetFormData, budget_amount: e.target.value})} required />
+                </div>
+                <div className="form-group flex flex-col justify-end">
+                  <button type="submit" className="btn-primary">Crear</button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          {budgets.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {budgets.map((budget) => (
+                <BudgetCard key={budget.id} budget={budget} analysis={{}} onEdit={() => {}} onDelete={() => deleteExpenseBudget(budget.id).then(() => loadAllData())} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* AUDITORIA TAB */}
+      {activeTab === 'auditoria' && (
+        <div className="card">
+          <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+            <span className="material-symbols-outlined text-blue-400">history</span>
+            Registro de Cambios
+          </h3>
+          <AuditLog logs={auditLogs} />
+        </div>
+      )}
     </div>
   )
 }

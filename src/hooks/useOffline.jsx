@@ -9,7 +9,6 @@ export function useOffline() {
 
   useEffect(() => {
     const handleOnline = () => {
-      console.log('📡 Conexión restaurada')
       setIsOffline(false)
       // Disparar sincronización
       if (window.syncManager) {
@@ -18,7 +17,6 @@ export function useOffline() {
     }
 
     const handleOffline = () => {
-      console.log('📴 En modo offline')
       setIsOffline(true)
     }
 
@@ -74,7 +72,7 @@ export function useOffline() {
         const queue = await window.offlineDB.getSyncQueue(false)
         setPendingChanges(queue.length)
       } catch (error) {
-        console.error('Error actualizando cambios pendientes:', error)
+        // Error actualizando cambios pendientes
       }
     }
   }

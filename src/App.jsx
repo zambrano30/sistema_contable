@@ -7,6 +7,7 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import { Layout } from './components/Layout'
 import { LoadingScreen } from './components/LoadingScreen'
 import { OfflineIndicator } from './hooks/useOffline.jsx'
+import InstallPrompt from './components/InstallPrompt'
 import { offlineDB } from './lib/offlineDB'
 import { syncManager } from './lib/syncManager'
 import LoginPage from './pages/LoginPage'
@@ -22,6 +23,7 @@ import AdminPage from './pages/AdminPage'
 import CashClosingPage from './pages/CashClosingPage'
 import CoinCounterPage from './pages/CoinCounterPage'
 import CompanySetupPage from './pages/CompanySetupPage'
+import WaitingForCompanyAssignment from './pages/WaitingForCompanyAssignment'
 
 // Hacer accesibles globalmente para debugging
 window.offlineDB = offlineDB
@@ -54,12 +56,21 @@ function AppContent() {
   }
 
   if (user && !activeCompany) {
+    // Si es vendedor (sales), mostrar pantalla de espera en lugar de obligar a crear empresa
+    const isVendedor = user.role && (user.role.toLowerCase() === 'vendedor' || user.role.toLowerCase() === 'sales')
+    if (isVendedor) {
+      return <WaitingForCompanyAssignment />
+    }
     return <CompanySetupPage />
   }
 
   return (
     <Routes>
-      <Route path="/" element={user ? <Navigate to={user.role === 'Cocinero' ? '/kitchen' : '/sales'} /> : <LoginPage />} />
+      <Route path="/" element={user ? <Navigate to={
+        user.role?.toLowerCase() === 'cocinero' ? '/kitchen' :
+        user.role?.toLowerCase() === 'administrador' || user.role?.toLowerCase() === 'admin' ? '/dashboard' :
+        '/sales'
+      } /> : <LoginPage />} />
       <Route path="/password" element={<PasswordPage />} />
       <Route
         path="/dashboard"
@@ -178,11 +189,9 @@ export default function App() {
     const initOffline = async () => {
       try {
         await offlineDB.init()
-        console.log('✅ Base de datos offline inicializada')
         await syncManager.init()
-        console.log('✅ Sync Manager inicializado')
       } catch (error) {
-        console.error('Error inicializando modo offline:', error)
+        // Error inicializando modo offline
       }
     }
     initOffline()
@@ -195,6 +204,7 @@ export default function App() {
           <CompanyProvider>
             <AppContent />
             <OfflineIndicator />
+            <InstallPrompt />
           </CompanyProvider>
         </AuthProvider>
       </ThemeProvider>

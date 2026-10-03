@@ -176,13 +176,99 @@ export async function getCookUsers() {
 }
 
 /**
+ * Assign a vendor to a company using RPC function
+ * @param {string} userId - User ID of the vendor
+ * @param {string} companyId - Company ID to assign to
+ * @returns {Promise<{ok: boolean, error?: string}>}
+ */
+export async function assignVendorToCompany(userId, companyId) {
+  if (!isSupabaseConfigured || !supabase) {
+    return {
+      ok: false,
+      error: 'Supabase no está configurado',
+    }
+  }
+
+  if (!userId || !companyId) {
+    return {
+      ok: false,
+      error: 'User ID and Company ID are required',
+    }
+  }
+
+  try {
+    // STRATEGY: Try RPC first (has SECURITY DEFINER bypass)
+    const { data: rpcData, error: rpcError } = await supabase
+      .rpc('assign_vendor_to_company', {
+        p_vendor_id: userId,
+        p_company_id: companyId
+      })
+
+    if (!rpcError) {
+      // RPC function exists and executed
+      if (rpcData?.success) {
+        console.log('✅ Vendor assigned via RPC (SECURITY DEFINER)')
+        return { ok: true }
+      } else {
+        console.error('❌ RPC returned error:', rpcData?.message)
+        return {
+          ok: false,
+          error: rpcData?.message || 'RPC assignment failed',
+        }
+      }
+    }
+
+    // If RPC doesn't exist (404), try direct INSERT as fallback
+    if (rpcError?.message?.includes('does not exist') || rpcError?.message?.includes('Could not find the function')) {
+      console.warn('⚠️ RPC function not yet created, attempting direct INSERT...')
+      
+      const { error: insertError } = await supabase
+        .from('company_memberships')
+        .insert([
+          {
+            company_id: companyId,
+            user_id: userId,
+            role: 'Vendedor'
+          }
+        ])
+
+      if (!insertError) {
+        console.log('✅ Vendor assigned via direct INSERT')
+        return { ok: true }
+      }
+
+      // If both fail
+      console.error('❌ Both methods failed. RPC error:', rpcError?.message, 'INSERT error:', insertError?.message)
+      return {
+        ok: false,
+        error: 'Cannot assign vendor to company. Please execute SQL script in Supabase.',
+      }
+    }
+
+    // Other RPC error
+    console.error('❌ RPC error:', rpcError?.message)
+    return {
+      ok: false,
+      error: rpcError?.message || 'Failed to assign vendor',
+    }
+  } catch (err) {
+    console.error('❌ Exception in assignVendorToCompany:', err.message)
+    return {
+      ok: false,
+      error: err.message,
+    }
+  }
+}
+
+/**
  * Create a new vendor/sales user
  * @param {string} email - Email of the vendor
  * @param {string} password - Password for the vendor
  * @param {string} name - Name of the vendor
+ * @param {string} companyId - (Optional) Company ID to assign vendor to
  * @returns {Promise<{ok: boolean, data?: Object, error?: string}>}
  */
-export async function createVendorUser(email, password, name) {
+export async function createVendorUser(email, password, name, companyId = null) {
   if (!isSupabaseConfigured || !supabase) {
     return {
       ok: false,
@@ -228,6 +314,14 @@ export async function createVendorUser(email, password, name) {
 
     if (rpcError) {
       // Expected edge case handled - user can still login even if RPC fails
+    }
+
+    // Step 3: Assign to company if provided
+    if (companyId) {
+      const assignResult = await assignVendorToCompany(vendorUserId, companyId)
+      if (!assignResult.ok) {
+        console.warn('⚠️ Vendor created but not assigned to company:', assignResult.error)
+      }
     }
 
     return {

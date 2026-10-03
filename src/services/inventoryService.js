@@ -116,7 +116,6 @@ export async function createInventoryMovement(movementData) {
 
     return { ok: true, data: movementResult[0] }
   } catch (err) {
-    console.error('Create inventory movement exception:', err)
     return { ok: false, error: err.message }
   }
 }

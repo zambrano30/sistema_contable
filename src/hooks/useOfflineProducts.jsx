@@ -19,7 +19,7 @@ export function useOfflineProducts() {
       const localProducts = await offlineDB.getProducts()
       setProducts(localProducts || [])
     } catch (error) {
-      console.error('Error cargando productos:', error)
+      // Error cargando productos
     } finally {
       setLoading(false)
     }
@@ -39,7 +39,7 @@ export function useOfflineProducts() {
         await syncManager.syncOfflineData()
       }
     } catch (error) {
-      console.error('Error agregando producto:', error)
+      // Error agregando producto
       throw error
     }
   }
@@ -53,7 +53,7 @@ export function useOfflineProducts() {
         await syncManager.syncOfflineData()
       }
     } catch (error) {
-      console.error('Error actualizando inventario:', error)
+      // Error actualizando inventario
       throw error
     }
   }

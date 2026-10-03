@@ -403,10 +403,8 @@ export function generateInvoicePDF(invoice, items, client, company = {}) {
       renderRoot.remove()
     }).catch((error) => {
       renderRoot.remove()
-      console.error('Error generating invoice PDF:', error)
     })
   } catch (error) {
-    console.error('Error generating invoice PDF:', error)
     throw error
   }
 }
@@ -426,7 +424,6 @@ export function generateMultipleInvoicesPDF(invoices) {
       )
     })
   } catch (error) {
-    console.error('Error generating multiple PDFs:', error)
     throw error
   }
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useCompany } from '../contexts/CompanyContext'
+import { signOut } from '../services/authService'
 
 export default function CompanySetupPage() {
   const { createCompany, error: companyError } = useCompany()
@@ -17,6 +18,11 @@ export default function CompanySetupPage() {
     const result = await createCompany({ name, legalName, taxId })
     if (!result.ok) setError(result.error)
     setSaving(false)
+  }
+
+  const handleLogout = async () => {
+    await signOut()
+    window.location.href = '/'
   }
 
   return (
@@ -61,6 +67,16 @@ export default function CompanySetupPage() {
             {saving ? 'Creando empresa...' : 'Crear empresa'}
           </button>
         </form>
+
+        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <button 
+            onClick={handleLogout}
+            className="btn-secondary w-full justify-center"
+          >
+            <span className="material-symbols-outlined">logout</span>
+            Cerrar sesión
+          </button>
+        </div>
       </section>
     </main>
   )

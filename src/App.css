@@ -1,27 +1,27 @@
 /* ============ FACTURAPRO PREMIUM GLASS DESIGN SYSTEM ============ */
 :root, [data-theme="dark"] {
-  --bg-primary: #0b0e14;
-  --bg-secondary: #121721;
-  --bg-tertiary: #1a2130;
-  --bg-container-high: #242e42;
-  --bg-container-highest: #2e3b54;
-  --bg-hover: #1f293b;
+  --bg-primary: #0d1621;
+  --bg-secondary: #132838;
+  --bg-tertiary: #1a2f42;
+  --bg-container-high: #243649;
+  --bg-container-highest: #2f4158;
+  --bg-hover: #1d2f3f;
   
-  --text-primary: #f3f5f9;
-  --text-secondary: #a0aec0;
-  --text-tertiary: #64748b;
+  --text-primary: #e8f0f3;
+  --text-secondary: #9ab3c2;
+  --text-tertiary: #6a8a9b;
   
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-light: rgba(255, 255, 255, 0.05);
-  --border-active: rgba(255, 159, 10, 0.5);
+  --border-color: rgba(108, 189, 201, 0.12);
+  --border-light: rgba(108, 189, 201, 0.06);
+  --border-active: rgba(92, 188, 201, 0.5);
   
-  --accent-orange: #ff9f0a;
-  --accent-orange-light: #ffc081;
-  --accent-orange-dark: #cc7a00;
-  --on-accent-orange: #1a0a00;
+  --accent-orange: #5cbcc9;
+  --accent-orange-light: #7ecdd8;
+  --accent-orange-dark: #3a8896;
+  --on-accent-orange: #f0f8fa;
   
-  --secondary: #007aff;
-  --tertiary: #64d2ff;
+  --secondary: #74b3d0;
+  --tertiary: #a8d4e8;
   --danger: #ff453a;
   --danger-bg: rgba(255, 69, 58, 0.15);
   --success: #30d158;
@@ -31,28 +31,28 @@
 }
 
 [data-theme="light"] {
-  --bg-primary: #f1f5f9;
+  --bg-primary: #f0f7f9;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #f8fafc;
-  --bg-container-high: #e2e8f0;
-  --bg-container-highest: #cbd5e1;
-  --bg-hover: #e2e8f0;
+  --bg-tertiary: #f5f9fb;
+  --bg-container-high: #d9e8f0;
+  --bg-container-highest: #c5dce8;
+  --bg-hover: #eaf3f7;
   
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
-  --text-tertiary: #64748b;
+  --text-primary: #1a3a4a;
+  --text-secondary: #4a6a80;
+  --text-tertiary: #6a8a9b;
   
-  --border-color: rgba(0, 0, 0, 0.1);
-  --border-light: rgba(0, 0, 0, 0.06);
-  --border-active: rgba(234, 88, 12, 0.5);
+  --border-color: rgba(31, 90, 120, 0.15);
+  --border-light: rgba(31, 90, 120, 0.08);
+  --border-active: rgba(74, 143, 168, 0.5);
   
-  --accent-orange: #ea580c;
-  --accent-orange-light: #c2410c;
-  --accent-orange-dark: #9a3412;
+  --accent-orange: #2f7a8a;
+  --accent-orange-light: #4a8fa8;
+  --accent-orange-dark: #1f5a78;
   --on-accent-orange: #ffffff;
   
-  --secondary: #2563eb;
-  --tertiary: #0284c7;
+  --secondary: #4a8fa8;
+  --tertiary: #1f5a78;
   --danger: #dc2626;
   --danger-bg: rgba(220, 38, 38, 0.1);
   --success: #16a34a;

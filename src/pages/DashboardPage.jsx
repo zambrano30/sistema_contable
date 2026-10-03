@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getTotalSales, getInvoiceStats, getAllInvoices, getMonthlyBalanceData } from '../services/invoicesService'
+import { useCompany } from '../contexts/CompanyContext'
+import { getTotalSales, getInvoiceStats, getAllInvoices } from '../services/invoicesService'
 import { getAllClients } from '../services/clientsService'
 import { getAllExpenses } from '../services/expensesService'
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const { activeCompanyId, companies } = useCompany()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
-  const [monthlyBalance, setMonthlyBalance] = useState([])
+  const [error, setError] = useState('')
   const [stats, setStats] = useState({
     totalSales: 0,
     monthlyGrowth: 0,
@@ -19,63 +21,70 @@ export default function DashboardPage() {
     totalExpenses: 0,
     balance: 0,
   })
-  useEffect(() => {
-    loadDashboardData()
-  }, [])
 
   const loadDashboardData = async () => {
     try {
       setLoading(true)
+      setError('')
 
-      let salesResult
-      let invoiceStatsResult
-      let clientsResult
-      let recentInvoicesResult
-      let monthlyBalanceResult
+      // Verify active company
+      if (!activeCompanyId) {
+        setError('No hay empresa seleccionada. Por favor, selecciona una empresa.')
+        setLoading(false)
+        return
+      }
 
       const today = new Date()
       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
       const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+      
+      const monthStartStr = monthStart.toISOString().split('T')[0]
+      const monthEndStr = monthEnd.toISOString().split('T')[0]
 
-      salesResult = await getTotalSales('month')
-      invoiceStatsResult = await getInvoiceStats()
-      clientsResult = await getAllClients()
-      recentInvoicesResult = await getAllInvoices()
-      monthlyBalanceResult = await getMonthlyBalanceData(6)
+      // Load all data in parallel
+      const [salesResult, invoiceStatsResult, clientsResult, recentInvoicesResult, expensesResult] = await Promise.all([
+        getTotalSales('month'),
+        getInvoiceStats(),
+        getAllClients(),
+        getAllInvoices(),
+        getAllExpenses({
+          startDate: monthStartStr,
+          endDate: monthEndStr,
+        })
+      ])
 
-      const expensesResult = await getAllExpenses({
-        startDate: monthStart.toISOString().split('T')[0],
-        endDate: monthEnd.toISOString().split('T')[0],
-      })
-      const totalExpenses = expensesResult.ok
-        ? (expensesResult.data || []).reduce((sum, exp) => sum + (exp.amount || 0), 0)
+      // Calculate total sales
+      const totalSales = salesResult.ok && salesResult.data?.total ? Number(salesResult.data.total) : 0
+
+      // Calculate total expenses
+      const totalExpenses = expensesResult.ok && Array.isArray(expensesResult.data)
+        ? expensesResult.data.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0)
         : 0
 
-      if (salesResult.ok && invoiceStatsResult.ok && clientsResult.ok) {
-        const totalSales = salesResult.data?.total || 0
-        const balance = totalSales - totalExpenses
+      // Calculate balance
+      const balance = totalSales - totalExpenses
 
-        setStats({
-          totalSales,
-          monthlyGrowth: salesResult.data?.monthlyGrowth || 0,
-          invoiceCount: invoiceStatsResult.data?.total || 0,
-          clientCount: clientsResult.data?.length || 0,
-          recentActivity: recentInvoicesResult.data?.slice(0, 4) || [],
-          totalExpenses,
-          balance,
-        })
-      }
-
-      if (monthlyBalanceResult.ok) {
-        setMonthlyBalance(monthlyBalanceResult.data || [])
-      }
+      // Set stats with all data
+      setStats({
+        totalSales: Number(totalSales.toFixed(2)),
+        monthlyGrowth: (salesResult.ok && salesResult.data?.monthlyGrowth) ? salesResult.data.monthlyGrowth : 0,
+        invoiceCount: invoiceStatsResult.ok && invoiceStatsResult.data ? invoiceStatsResult.data.total : 0,
+        clientCount: clientsResult.ok && Array.isArray(clientsResult.data) ? clientsResult.data.length : 0,
+        recentActivity: recentInvoicesResult.ok && Array.isArray(recentInvoicesResult.data) ? recentInvoicesResult.data.slice(0, 4) : [],
+        totalExpenses: Number(totalExpenses.toFixed(2)),
+        balance: Number(balance.toFixed(2)),
+      })
 
     } catch (error) {
-      console.error('Error loading dashboard data:', error)
+      setError('Error al cargar datos del dashboard. Intenta recargar la página.')
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    loadDashboardData()
+  }, [activeCompanyId])
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('es-CO', {
@@ -100,17 +109,7 @@ export default function DashboardPage() {
     return `$${Number(value).toLocaleString('es-CO', { maximumFractionDigits: 0 })}`
   }
 
-  const maxMonthlyValue = Math.max(
-    1,
-    ...monthlyBalance.map((item) => Math.max(item.sales, item.expenses, Math.abs(item.balance), 1))
-  )
 
-  const formatMonthLabel = (month) => {
-    if (!month) return ''
-    const [year, monthNumber] = month.split('-')
-    const date = new Date(Number(year), Number(monthNumber) - 1, 1)
-    return date.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' })
-  }
 
   return (
     <div className="page-container">
@@ -134,6 +133,16 @@ export default function DashboardPage() {
           </button>
         </div>
       </header>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6 text-red-300 flex items-start gap-3">
+          <span className="material-symbols-outlined flex-shrink-0 text-red-400">error</span>
+          <div>
+            <p className="font-semibold text-sm">{error}</p>
+          </div>
+        </div>
+      )}
 
       {/* Hero / Quick Stats Bento Grid */}
       <section className="bento-grid">
@@ -248,49 +257,6 @@ export default function DashboardPage() {
       </section>
 
       <div className="grid grid-cols-1 gap-6">
-        <section className="card">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h3 className="text-lg font-extrabold m-0 text-[var(--text-primary)]">Balance mensual</h3>
-              <p className="text-xs text-[var(--text-secondary)] mt-1">Ventas, gastos y utilidad por mes</p>
-            </div>
-          </div>
-
-          {monthlyBalance.length > 0 ? (
-            <div className="grid grid-cols-6 gap-3 items-end h-52">
-              {monthlyBalance.map((item) => {
-                const salesHeight = Math.max((item.sales / maxMonthlyValue) * 100, 8)
-                const expensesHeight = Math.max((item.expenses / maxMonthlyValue) * 100, 8)
-
-                return (
-                  <div key={item.month} className="flex flex-col items-center gap-2 h-full justify-end">
-                    <div className="flex items-end justify-center gap-1 h-36 w-full">
-                      <div
-                        className="w-1/2 rounded-t-xl bg-emerald-500/80 shadow-[0_0_16px_rgba(16,185,129,0.35)]"
-                        title={`Ventas ${formatCurrency(item.sales)}`}
-                        style={{ height: `${salesHeight}%` }}
-                      />
-                      <div
-                        className="w-1/2 rounded-t-xl bg-red-500/80 shadow-[0_0_16px_rgba(239,68,68,0.35)]"
-                        title={`Gastos ${formatCurrency(item.expenses)}`}
-                        style={{ height: `${expensesHeight}%` }}
-                      />
-                    </div>
-                    <div className="text-center">
-                      <div className="text-[10px] font-bold text-[var(--text-secondary)]">{formatMonthLabel(item.month)}</div>
-                      <div className={`text-[10px] font-bold ${item.balance >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
-                        {formatCurrency(item.balance)}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-[var(--text-secondary)] text-sm">Sin datos del balance mensual</div>
-          )}
-        </section>
-
         {/* Recent Activity List */}
         <section className="card flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">

@@ -6,12 +6,13 @@ const AuthContext = createContext()
 
 // Función para traducir y capitalizar roles
 const normalizeRole = (role) => {
-  if (!role) return 'Administrador'
+  if (!role) return 'Vendedor'
   
   const roleMap = {
     'admin': 'Administrador',
     'administrator': 'Administrador',
     'administrador': 'Administrador',
+    'sales': 'Vendedor',
     'seller': 'Vendedor',
     'saler': 'Vendedor',
     'vendedor': 'Vendedor',
@@ -23,6 +24,8 @@ const normalizeRole = (role) => {
     'cooker': 'Cocinero',
     'cocinero': 'Cocinero',
     'chef': 'Cocinero',
+    'inventory': 'Gerente de Inventario',
+    'viewer': 'Viewer',
   }
   
   const normalized = roleMap[role.toLowerCase()] || role
@@ -50,9 +53,11 @@ export function AuthProvider({ children }) {
         
         if (dbUser) {
           // Combinar datos de autenticación con datos de base de datos
+          const normalized = normalizeRole(dbUser.role || 'Vendedor')
+          console.log('📊 User role from DB:', dbUser.role, 'Normalized:', normalized)
           const userData = {
             ...authUser,
-            role: normalizeRole(dbUser.role || 'Administrador')
+            role: normalized
           }
           setUser(userData)
         } else {

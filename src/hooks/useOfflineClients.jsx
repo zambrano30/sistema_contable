@@ -19,7 +19,7 @@ export function useOfflineClients() {
       const localClients = await offlineDB.getClients()
       setClients(localClients || [])
     } catch (error) {
-      console.error('Error cargando clientes:', error)
+      // Error cargando clientes
     } finally {
       setLoading(false)
     }
@@ -39,7 +39,7 @@ export function useOfflineClients() {
         await syncManager.syncOfflineData()
       }
     } catch (error) {
-      console.error('Error agregando cliente:', error)
+      // Error agregando cliente
       throw error
     }
   }
@@ -54,7 +54,7 @@ export function useOfflineClients() {
         await syncManager.syncOfflineData()
       }
     } catch (error) {
-      console.error('Error actualizando cliente:', error)
+      // Error actualizando cliente
       throw error
     }
   }

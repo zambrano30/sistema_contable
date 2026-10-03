@@ -65,7 +65,6 @@ export default function InvoicesPage() {
         address: 'Quevedo, Los Ríos, Ecuador',
       })
     } catch (err) {
-      console.error('Error generating PDF:', err)
       setError('Error generando PDF')
     }
   }

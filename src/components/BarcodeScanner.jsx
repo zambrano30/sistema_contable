@@ -33,7 +33,6 @@ export function BarcodeScanner({ onScan, onClose }) {
 
     const onScanError = (error) => {
       // Ignorar errores de escaneo continuo
-      console.debug('Scan error:', error);
     };
 
     scanner.render(onScanSuccess, onScanError);

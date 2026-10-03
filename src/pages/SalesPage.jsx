@@ -75,7 +75,6 @@ export default function SalesPage() {
         setPaymentMethod(draft.paymentMethod || 'cash')
       }
     } catch (error) {
-      console.error('No se pudo restaurar el borrador de factura:', error)
       localStorage.removeItem(draftStorageKey)
     }
 
@@ -364,6 +363,12 @@ export default function SalesPage() {
     }
 
     const { subtotal, taxAmount, total } = calculateTotals()
+
+    // Validate that total is greater than 0
+    if (!total || total <= 0) {
+      setError('El total de la factura debe ser mayor a 0. Verifica los productos o el monto ingresado.')
+      return
+    }
 
     const invoiceData = {
       client_id: isConsumerFinal ? null : parseInt(selectedClient),

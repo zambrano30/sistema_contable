@@ -57,9 +57,6 @@ export async function signUp(userData) {
   }
 
   try {
-    console.log('📝 Iniciando signup para:', email)
-    console.log('Cédula:', userData.cedula.trim())
-    
     // PASO 1: Crear en Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email: email,
@@ -76,16 +73,12 @@ export async function signUp(userData) {
     })
 
     if (error) {
-      console.error('❌ Error en auth.signUp:', error)
       return { ok: false, error: error.message }
     }
 
     if (!data?.user?.id) {
-      console.error('❌ No user ID returned')
       return { ok: false, error: 'No se pudo crear la cuenta' }
     }
-
-    console.log('✅ Usuario creado en auth:', data.user.id)
 
     // PASO 2: Insertar en tabla users DIRECTAMENTE
     // Esperar a que el usuario exista en auth
@@ -106,10 +99,8 @@ export async function signUp(userData) {
         
         if (checkUser) {
           userExists = true
-          console.log('✅ Usuario ya existe en tabla users (trigger funcionó)')
           // Actualizar con la cédula correcta si no la tiene
           if (!checkUser.cedula || checkUser.cedula.startsWith('TEMP-')) {
-            console.log('🔄 Actualizando cédula en usuario existente...')
             await supabase
               .from('users')
               .update({ cedula: userData.cedula.trim() })
@@ -118,13 +109,12 @@ export async function signUp(userData) {
           break
         }
       } catch (e) {
-        console.log('⏳ Usuario aún no existe, reintentando... Intento', attempts)
+        // Usuario aún no existe, reintentando
       }
-    }
+    }// Usuario aún no existe, reintentando
 
     // Si el usuario NO existe aún, insertarlo directamente
     if (!userExists) {
-      console.log('🔧 Insertando usuario directamente...')
       const { error: insertError } = await supabase
         .from('users')
         .insert({
@@ -135,15 +125,14 @@ export async function signUp(userData) {
           telefono: sanitizeInput(userData.telefono || '') || null,
           empresa_nombre: sanitizeInput(userData.empresa_nombre || '') || null,
           cargo: sanitizeInput(userData.cargo || '') || null,
-          rol: 'Vendedor',
+          role: 'sales',
           is_active: true
         })
 
       if (insertError) {
-        console.error('⚠️ Error al insertar usuario:', insertError.message)
         // No fallar - el usuario se registró en auth
       } else {
-        console.log('✅ Usuario insertado con cédula:', userData.cedula.trim())
+        // Usuario insertado correctamente
       }
     }
 
@@ -156,15 +145,13 @@ export async function signUp(userData) {
       .maybeSingle()
 
     if (finalCheck) {
-      console.log('✅ Verificación final - Usuario guardado:', finalCheck)
       if (finalCheck.cedula !== userData.cedula.trim()) {
-        console.warn('⚠️ Cédula no coincide! Esperada:', userData.cedula.trim(), 'Actual:', finalCheck.cedula)
+        // Cédula no coincide
       }
     }
 
     return { ok: true, data }
   } catch (err) {
-    console.error('❌ SignUp error:', err)
     return { ok: false, error: 'Error al registrarse: ' + err.message }
   }
 }
@@ -195,7 +182,6 @@ export async function signIn(email, password) {
 
   try {
     const emailTrim = email.trim()
-    console.log('🔍 Iniciando login con email:', emailTrim)
 
     // Usar el email directamente para autenticarse
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -204,19 +190,15 @@ export async function signIn(email, password) {
     })
 
     if (authError) {
-      console.error('❌ Error de autenticación:', authError.message)
       return { ok: false, error: 'Email o contraseña incorrecta.' }
     }
 
     if (!authData?.user) {
-      console.error('❌ No auth user returned')
       return { ok: false, error: 'Error al iniciar sesión. Intenta de nuevo.' }
     }
 
-    console.log('✅ Login exitoso para:', emailTrim)
     return { ok: true, data: authData }
   } catch (err) {
-    console.error('❌ SignIn error:', err)
     return { ok: false, error: 'No se pudo conectar con el servidor. Intenta más tarde.' }
   }
 }
